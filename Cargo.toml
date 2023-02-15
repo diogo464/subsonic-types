@@ -1,0 +1,15 @@
+[package]
+name = "subsonic-types"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+subsonic-macro = { path = "./subsonic-macro" }
+
+chrono = { version = "0.4.23", features = ["serde"] }
+features = "0.10.0"
+quick-xml = { version = "0.27.1", features = ["serde", "serialize"] }
+serde = { version = "1.0.152", features = ["derive"] }
+serde_json = "1.0.93"
