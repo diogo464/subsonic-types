@@ -1,3 +1,5 @@
+#![feature(negative_impls)]
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use subsonic_types::SubsonicType;
@@ -8,195 +10,77 @@ pub enum Format {
     QuickXml,
 }
 
-pub trait SubsonicType<'de>: Sized {
-    fn deserialize<D>(format: Format, deserialize: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>;
-
+pub trait SubsonicSerialize {
     fn serialize<S>(&self, format: Format, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Json<T>(T);
-
-impl<T> serde::Serialize for Json<T>
-where
-    T: for<'a> SubsonicType<'a>,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+pub trait SubsonicDeserialize<'de>: Sized {
+    fn deserialize<D>(format: Format, deserialize: D) -> Result<Self, D::Error>
     where
-        S: serde::Serializer,
-    {
-        self.0.serialize(Format::Json, serializer)
-    }
+        D: serde::Deserializer<'de>;
 }
 
-impl<'de, T> serde::Deserialize<'de> for Json<T>
-where
-    T: SubsonicType<'de>,
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        T::deserialize(Format::Json, deserializer).map(Json)
-    }
-}
+pub trait SubsonicType<'de>: SubsonicSerialize + SubsonicDeserialize<'de> {}
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct QuickXml<T>(T);
+impl<'de, T: SubsonicSerialize + SubsonicDeserialize<'de>> SubsonicType<'de> for T {}
 
-impl<T> serde::Serialize for QuickXml<T>
-where
-    T: for<'a> SubsonicType<'a>,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.0.serialize(Format::QuickXml, serializer)
-    }
-}
+macro_rules! wrapper_impl {
+    ($t:ident, $f:expr) => {
+        #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+        pub struct $t<T>(T);
 
-impl<'de, T> serde::Deserialize<'de> for QuickXml<T>
-where
-    T: SubsonicType<'de>,
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        T::deserialize(Format::QuickXml, deserializer).map(QuickXml)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, SubsonicType)]
-pub struct Response2 {
-    #[subsonic(xml(rename = "@status"), json(), common())]
-    pub status: String,
-    pub version: String,
-    pub application_version: String,
-}
-
-// #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-// pub struct Response {
-//     pub status: String,
-//     pub version: String,
-//     pub body: ResponseBody,
-// }
-
-// impl<'de> SubsonicType<'de> for Response {
-//     fn deserialize<D>(format: Format, deserializer: D) -> Result<Self, D::Error>
-//     where
-//         D: serde::Deserializer<'de>,
-//     {
-//         match format {
-//             Format::Json => {
-//                 #[derive(Deserialize)]
-//                 struct Json {
-//                     status: String,
-//                     version: String,
-//                     #[serde(flatten)]
-//                     body: ResponseBody,
-//                 }
-//                 Json::deserialize(deserializer).map(|json| Response {
-//                     status: json.status,
-//                     version: json.version,
-//                     body: json.body,
-//                 })
-//             }
-//             Format::QuickXml => {
-//                 #[derive(Deserialize)]
-//                 struct Xml {
-//                     #[serde(rename = "@status")]
-//                     status: String,
-//                     #[serde(rename = "@version")]
-//                     version: String,
-//                     #[serde(flatten)]
-//                     body: ResponseBody,
-//                 }
-//                 Xml::deserialize(deserializer).map(|xml| Response {
-//                     status: xml.status,
-//                     version: xml.version,
-//                     body: xml.body,
-//                 })
-//             }
-//         }
-//     }
-
-//     fn serialize<S>(&self, format: Format, serializer: S) -> Result<S::Ok, S::Error>
-//     where
-//         S: serde::Serializer,
-//     {
-//         match format {
-//             Format::Json => {
-//                 #[derive(Serialize)]
-//                 struct Json<'a> {
-//                     status: &'a str,
-//                     version: &'a str,
-//                     #[serde(flatten)]
-//                     body: &'a ResponseBody,
-//                 }
-//                 Json {
-//                     status: &self.status,
-//                     version: &self.version,
-//                     body: &self.body,
-//                 }
-//                 .serialize(serializer)
-//             }
-//             Format::QuickXml => {
-//                 #[derive(Serialize)]
-//                 struct Xml<'a> {
-//                     #[serde(rename = "@status")]
-//                     status: &'a str,
-//                     #[serde(rename = "@version")]
-//                     version: &'a str,
-//                     #[serde(flatten)]
-//                     body: &'a ResponseBody,
-//                 }
-//                 Xml {
-//                     status: &self.status,
-//                     version: &self.version,
-//                     body: &self.body,
-//                 }
-//                 .serialize(serializer)
-//             }
-//         }
-//     }
-// }
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ResponseBody {
-    License(License),
-}
-
-const _: () = {
-    enum ResponseBodyJson {}
-
-    impl<'de> SubsonicType<'de> for ResponseBody {
-        fn deserialize<D>(format: Format, deserialize: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de>,
-        {
-            todo!()
+        impl<T> $t<T> {
+            pub fn into_inner(self) -> T {
+                self.0
+            }
         }
 
-        fn serialize<S>(&self, format: Format, serializer: S) -> Result<S::Ok, S::Error>
+        impl<T> serde::Serialize for $t<T>
         where
-            S: serde::Serializer,
+            T: $crate::SubsonicSerialize,
         {
-            todo!()
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: serde::Serializer,
+            {
+                <Self as $crate::SubsonicSerialize>::serialize(self, $f, serializer)
+            }
         }
-    }
-};
-
-impl From<License> for ResponseBody {
-    fn from(license: License) -> Self {
-        ResponseBody::License(license)
-    }
+    };
 }
+
+wrapper_impl!(Json, Format::Json);
+wrapper_impl!(QuickXml, Format::QuickXml);
+
+// macro_rules! impl_subsonic_serialize {
+//     ($t:ty) => {
+//         impl SubsonicSerialize for $t {
+//             fn serialize<S>(&self, format: Format, serializer: S) -> Result<S::Ok, S::Error>
+//             where
+//                 S: serde::Serializer,
+//             {
+//                 <Self as serde::Serialize>::serialize(self, serializer)
+//             }
+//         }
+//     };
+//     (@ $t:ty) => {
+//         impl<T: serde::Serialize> SubsonicSerialize for $t {
+//             fn serialize<S>(&self, format: Format, serializer: S) -> Result<S::Ok, S::Error>
+//             where
+//                 S: serde::Serializer,
+//             {
+//                 <Self as serde::Serialize>::serialize(self, serializer)
+//             }
+//         }
+//     };
+// }
+
+// impl_subsonic_serialize!(bool);
+// impl_subsonic_serialize!(String);
+// impl_subsonic_serialize!(@ Option<T>);
+// impl_subsonic_serialize!(DateTime<Utc>);
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, SubsonicType)]
 #[subsonic(common(rename_all = "camelCase"))]
@@ -207,7 +91,20 @@ pub struct License {
     pub trial_expires: Option<DateTime<Utc>>,
 }
 
+// #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, SubsonicType)]
+// pub struct Response {
+//     status: String,
+//     license: License,
+// }
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let license = License {
+        valid: true,
+        ..Default::default()
+    };
+    let output = serde_json::to_string(&Json(&license))?;
+    println!("{output}");
+
     // let response = Response {
     //     status: "ok".to_string(),
     //     version: "1.16.1".to_string(),
