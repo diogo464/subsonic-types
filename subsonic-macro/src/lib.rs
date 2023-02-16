@@ -1,3 +1,5 @@
+mod subsonic_type;
+
 type Result<T, E = syn::Error> = std::result::Result<T, E>;
 
 const ATTR_XML: AttrName = AttrName::new("xml");
@@ -558,6 +560,15 @@ fn expand_output(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
 pub fn subsonic_type(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
     match expand_output(input) {
+        Ok(output) => proc_macro::TokenStream::from(output),
+        Err(err) => proc_macro::TokenStream::from(err.into_compile_error()),
+    }
+}
+
+#[proc_macro_derive(SubsonicType2, attributes(subsonic))]
+pub fn subsonic(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = syn::parse_macro_input!(input as syn::DeriveInput);
+    match subsonic_type::expand(input) {
         Ok(output) => proc_macro::TokenStream::from(output),
         Err(err) => proc_macro::TokenStream::from(err.into_compile_error()),
     }
