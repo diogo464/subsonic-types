@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::common::AudioBitrate;
+
 /// Get details about a given user, including which authorization roles and folder access it has.
 /// Can be used to enable/disable certain features in the client, such as jukebox control.
 ///
@@ -51,13 +53,13 @@ pub struct CreateUser {
     pub comment_role: Option<bool>,
     /// Whether the user is allowed to administrate Podcasts.
     pub podcast_role: Option<bool>,
-    /// TODO: Since 1.8.0
+    /// Since 1.8.0
     /// Whether the user is allowed to share files with anyone.
     pub share_role: Option<bool>,
-    /// TODO: Since 1.15.0
+    /// Since 1.15.0
     /// Whether the user is allowed to start video conversions.
     pub video_conversion_role: Option<bool>,
-    /// TODO: Since 1.12.0
+    /// Since 1.12.0
     /// IDs of the music folders the user is allowed access to. Include the parameter once for each folder.
     pub music_folder_id: Vec<String>,
 }
@@ -95,18 +97,17 @@ pub struct UpdateUser {
     pub podcast_role: Option<bool>,
     /// Whether the user is allowed to share files with anyone.
     pub share_role: Option<bool>,
-    /// TODO: Since 1.15.0
+    /// Since 1.15.0
     /// Whether the user is allowed to start video conversions.
     pub video_conversion_role: Option<bool>,
-    /// TODO: Since 1.12.0
+    /// Since 1.12.0
     /// IDs of the music folders the user is allowed access to.
     pub music_folder_id: Vec<String>,
-    /// TODO: Since 1.13.0
-    /// TODO: Maybe make this an enum?
+    /// Since 1.13.0
     /// he maximum bit rate (in Kbps) for the user.
     /// Audio streams of higher bit rates are automatically downsampled to this bit rate.
     /// Legal values: 0 (no limit), 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320.
-    pub max_bit_rate: Option<u32>,
+    pub max_bit_rate: Option<AudioBitrate>,
 }
 
 /// Deletes an existing Subsonic user, using the following parameters.

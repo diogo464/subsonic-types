@@ -1,7 +1,9 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::SubsonicType;
+use crate::{
+    common::{AverageRating, DateTime, MediaType, UserRating},
+    SubsonicType,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -34,9 +36,9 @@ pub struct License {
     #[subsonic(attribute, optional)]
     pub email: Option<String>,
     #[subsonic(attribute, optional)]
-    pub licence_expires: Option<DateTime<Utc>>,
+    pub licence_expires: Option<DateTime>,
     #[subsonic(attribute, optional)]
-    pub trial_expires: Option<DateTime<Utc>>,
+    pub trial_expires: Option<DateTime>,
 }
 
 #[derive(Debug)]
@@ -164,7 +166,7 @@ pub struct Artist {
     #[subsonic(attribute, optional)]
     pub artist_image_url: Option<String>,
     #[subsonic(attribute, optional)]
-    pub starred: Option<DateTime<Utc>>,
+    pub starred: Option<DateTime>,
     #[subsonic(attribute, optional)]
     pub user_rating: Option<UserRating>,
     #[subsonic(attribute, optional)]
@@ -211,7 +213,7 @@ pub struct ArtistID3 {
     #[subsonic(attribute)]
     pub album_count: u32,
     #[subsonic(attribute, optional)]
-    pub starred: Option<DateTime<Utc>>,
+    pub starred: Option<DateTime>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
@@ -240,9 +242,9 @@ pub struct AlbumID3 {
     #[subsonic(attribute, optional)]
     pub play_count: Option<u64>,
     #[subsonic(attribute, optional)]
-    pub created: Option<DateTime<Utc>>,
+    pub created: Option<DateTime>,
     #[subsonic(attribute, optional)]
-    pub starred: Option<DateTime<Utc>>,
+    pub starred: Option<DateTime>,
     #[subsonic(attribute, optional)]
     pub year: Option<u32>,
     #[subsonic(attribute, optional)]
@@ -307,7 +309,7 @@ pub struct Directory {
     #[subsonic(attribute)]
     pub name: String,
     #[subsonic(attribute, optional)]
-    pub starred: Option<DateTime<Utc>>,
+    pub starred: Option<DateTime>,
     #[subsonic(attribute, optional)]
     pub user_rating: Option<UserRating>,
     #[subsonic(attribute, optional)]
@@ -366,9 +368,9 @@ pub struct Child {
     #[subsonic(attribute, optional)]
     pub disc_number: Option<u32>,
     #[subsonic(attribute, optional)]
-    pub created: Option<DateTime<Utc>>,
+    pub created: Option<DateTime>,
     #[subsonic(attribute, optional)]
-    pub starred: Option<DateTime<Utc>>,
+    pub starred: Option<DateTime>,
     #[subsonic(attribute, optional)]
     pub album_id: Option<String>,
     #[subsonic(attribute, optional)]
@@ -382,161 +384,6 @@ pub struct Child {
     #[subsonic(attribute, optional)]
     pub original_height: Option<u32>,
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum MediaType {
-    Music,
-    Podcast,
-    AudioBook,
-    Video,
-}
-impl_subsonic_for_serde!(MediaType);
-
-#[derive(Debug)]
-pub struct InvalidUserRating;
-
-impl std::fmt::Display for InvalidUserRating {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Invalid user rating")
-    }
-}
-
-impl std::error::Error for InvalidUserRating {}
-
-// TODO: Move this to common
-#[derive(Debug, Clone, Copy, PartialEq, Hash)]
-pub struct UserRating(u32);
-impl_subsonic_for_serde!(UserRating);
-
-impl UserRating {
-    pub fn new(value: u32) -> Result<Self, InvalidUserRating> {
-        if value > 5 || value < 1 {
-            Err(InvalidUserRating)
-        } else {
-            Ok(UserRating(value))
-        }
-    }
-
-    pub fn value(self) -> u32 {
-        self.0
-    }
-}
-
-impl std::fmt::Display for UserRating {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl std::str::FromStr for UserRating {
-    type Err = InvalidUserRating;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let value = s.parse().map_err(|_| InvalidUserRating)?;
-        UserRating::new(value)
-    }
-}
-
-impl From<UserRating> for u32 {
-    fn from(value: UserRating) -> Self {
-        value.0
-    }
-}
-
-impl Serialize for UserRating {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_u32(self.0)
-    }
-}
-
-impl<'de> Deserialize<'de> for UserRating {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let value = u32::deserialize(deserializer)?;
-        UserRating::new(value).map_err(serde::de::Error::custom)
-    }
-}
-
-#[derive(Debug)]
-pub struct InvalidAverageRating;
-
-impl std::fmt::Display for InvalidAverageRating {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Invalid average rating")
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct AverageRating(f32);
-impl_subsonic_for_serde!(AverageRating);
-
-impl AverageRating {
-    pub fn new(value: f32) -> Result<Self, InvalidAverageRating> {
-        if value > 5.0 || value < 1.0 {
-            Err(InvalidAverageRating)
-        } else {
-            Ok(AverageRating(value))
-        }
-    }
-
-    pub fn value(self) -> f32 {
-        self.0
-    }
-}
-
-impl std::fmt::Display for AverageRating {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl std::str::FromStr for AverageRating {
-    type Err = InvalidAverageRating;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let value = s.parse().map_err(|_| InvalidAverageRating)?;
-        AverageRating::new(value)
-    }
-}
-
-impl From<AverageRating> for f32 {
-    fn from(value: AverageRating) -> Self {
-        value.0
-    }
-}
-
-impl Serialize for AverageRating {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_f32(self.0)
-    }
-}
-
-impl<'de> Deserialize<'de> for AverageRating {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let value = f32::deserialize(deserializer)?;
-        AverageRating::new(value).map_err(serde::de::Error::custom)
-    }
-}
-
-impl std::hash::Hash for AverageRating {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.to_bits().hash(state)
-    }
-}
-
-impl std::cmp::Eq for AverageRating {}
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct NowPlaying {
@@ -603,9 +450,9 @@ pub struct Playlist {
     #[subsonic(attribute)]
     pub duration: u32,
     #[subsonic(attribute)]
-    pub created: DateTime<Utc>,
+    pub created: DateTime,
     #[subsonic(attribute)]
-    pub changed: DateTime<Utc>,
+    pub changed: DateTime,
     #[subsonic(attribute, optional)]
     pub cover_art: Option<String>,
     pub allowed_user: Vec<String>,
@@ -647,7 +494,7 @@ pub struct ChatMessage {
     #[subsonic(attribute)]
     pub username: String,
     #[subsonic(attribute)]
-    pub time: DateTime<Utc>,
+    pub time: DateTime,
     #[subsonic(attribute)]
     pub message: String,
 }
@@ -719,7 +566,7 @@ pub struct PodcastEpisode {
     #[subsonic(attribute)]
     pub status: PodcastStatus,
     #[subsonic(attribute, optional)]
-    pub publish_date: Option<DateTime<Utc>>,
+    pub publish_date: Option<DateTime>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -763,9 +610,9 @@ pub struct Bookmark {
     #[subsonic(attribute, optional)]
     pub comment: Option<String>,
     #[subsonic(attribute)]
-    pub created: DateTime<Utc>,
+    pub created: DateTime,
     #[subsonic(attribute)]
-    pub changed: DateTime<Utc>,
+    pub changed: DateTime,
     pub entry: Vec<Child>,
 }
 
@@ -778,7 +625,7 @@ pub struct PlayQueue {
     #[subsonic(attribute)]
     pub username: String,
     #[subsonic(attribute)]
-    pub changed: DateTime<Utc>,
+    pub changed: DateTime,
     /// Name of client app
     #[subsonic(attribute)]
     pub changed_by: String,
@@ -801,11 +648,11 @@ pub struct Share {
     #[subsonic(attribute)]
     pub username: String,
     #[subsonic(attribute)]
-    pub created: DateTime<Utc>,
+    pub created: DateTime,
     #[subsonic(attribute, optional)]
-    pub expires: Option<DateTime<Utc>>,
+    pub expires: Option<DateTime>,
     #[subsonic(attribute, optional)]
-    pub last_visited: Option<DateTime<Utc>>,
+    pub last_visited: Option<DateTime>,
     #[subsonic(attribute)]
     pub visit_count: u64,
     pub entry: Vec<Child>,
@@ -922,7 +769,7 @@ pub struct User {
     #[subsonic(attribute)]
     pub video_conversion_role: bool,
     #[subsonic(attribute, optional)]
-    pub avatar_last_changed: Option<DateTime<Utc>>,
+    pub avatar_last_changed: Option<DateTime>,
     pub folder: Vec<u32>,
 }
 

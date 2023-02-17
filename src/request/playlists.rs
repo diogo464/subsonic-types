@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getPlaylists>
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GetPlaylists {
-    /// TODO: since 1.8.0
+    /// Since 1.8.0
     /// If specified, return playlists for this user rather than for the authenticated user. The authenticated user must have admin role if this parameter is used.
     pub username: Option<String>,
 }

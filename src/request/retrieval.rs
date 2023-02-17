@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::common::{VideoBitrate, VideoSize};
 #[allow(unused)]
 use crate::{
     common::Seconds,
@@ -10,25 +11,24 @@ use crate::{
 pub struct Stream {
     /// A string which uniquely identifies the file to stream. Obtained by calls to [`GetMusicDirectory`].
     pub id: String,
-    /// TODO: Since 1.2.0
+    /// Since 1.2.0
     /// If specified, the server will attempt to limit the bitrate to this value, in kilobits per second. If set to zero, no limit is imposed.
     pub max_bit_rate: Option<u32>,
-    /// TODO: Since 1.6.0
+    /// Since 1.6.0
     /// Specifies the preferred target format (e.g., "mp3" or "flv") in case there are multiple applicable transcodings. Starting with 1.9.0 you can use the special value "raw" to disable transcoding.
     pub format: Option<String>,
     /// Only applicable to video streaming.
     /// If specified, start streaming at the given offset (in seconds) into the video.
     /// Typically used to implement video skipping.
     pub time_offset: Option<Seconds>,
-    /// TODO: Since 1.6.0
-    /// TODO: Maybe create a type for this
+    /// Since 1.6.0
     /// Only applicable to video streaming.
     /// Requested video size specified as WxH, for instance "640x480".
-    pub size: Option<String>,
-    /// TODO: since 1.8.0
+    pub size: Option<VideoSize>,
+    /// Since 1.8.0
     /// If set to "true", the Content-Length HTTP header will be set to an estimated value for transcoded or downsampled media.
     pub estimate_content_length: Option<bool>,
-    /// TODO: Since 1.14.0
+    /// Since 1.14.0
     /// Only applicable to video streaming.
     /// Subsonic can optimize videos for streaming by converting them to MP4.
     /// If a conversion exists for the video in question, then setting this parameter to "true" will cause the converted video to be returned instead of the original.
@@ -55,13 +55,12 @@ pub struct Download {
 pub struct Hls {
     /// A string which uniquely identifies the file to stream. Obtained by calls to [`GetMusicDirectory`].
     pub id: String,
-    /// TODO: Maybe create a type for this
     /// If specified, the server will attempt to limit the bitrate to this value, in kilobits per second.
     /// If this parameter is specified more than once, the server will create a variant playlist, suitable for adaptive bitrate streaming.
     /// The playlist will support streaming at all the specified bitrates.
     /// The server will automatically choose video dimensions that are suitable for the given bitrates.
     /// Since 1.9.0 you may explicitly request a certain width (480) and height (360) like so: bitRate=1000@480x360
-    pub bit_rate: Option<String>,
+    pub bit_rate: Option<VideoBitrate>,
     /// The ID of the audio track to use. See [`GetVideoInfo`] for how to get the list of available audio tracks for a video.
     pub audio_track: Option<String>,
 }

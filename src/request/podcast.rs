@@ -7,10 +7,10 @@ use serde::{Deserialize, Serialize};
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getPodcasts>
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GetPodcasts {
-    /// TODO: Since 1.9.0
+    /// Since 1.9.0
     /// Whether to include Podcast episodes in the returned result.
     pub include_episodes: Option<bool>,
-    /// TODO: Since 1.9.0
+    /// Since 1.9.0
     /// If specified, only return the Podcast channel with this ID.
     pub id: Option<String>,
 }

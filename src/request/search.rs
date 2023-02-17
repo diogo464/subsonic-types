@@ -44,7 +44,7 @@ pub struct Search2 {
     pub song_count: Option<u32>,
     /// Search result offset for songs. Used for paging.
     pub song_offset: Option<u32>,
-    /// TODO: since 1.12.0
+    /// Since 1.12.0
     /// Only return results from the music folder with the given ID. See [`GetMusicFolders`].
     pub music_folder_id: Option<String>,
 }
@@ -68,7 +68,7 @@ pub struct Search3 {
     pub song_count: Option<u32>,
     /// Search result offset for songs. Used for paging.
     pub song_offset: Option<u32>,
-    /// TODO: since 1.12.0
+    /// Since 1.12.0
     /// Only return results from the music folder with the given ID. See [`GetMusicFolders`].
     pub music_folder_id: Option<String>,
 }

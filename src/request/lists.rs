@@ -44,7 +44,7 @@ pub struct GetAlbumList {
     /// The name of the genre, e.g., "Rock".
     /// Required if [`GetAlbumList::list_type`] is [`ListType::ByGenre`].
     pub genre: Option<String>,
-    /// TODO: Since 1.11.0
+    /// Since 1.11.0
     /// Only return albums in the music folder with the given ID. See [`GetMusicFolders`].
     pub music_folder_id: Option<String>,
 }
@@ -70,7 +70,7 @@ pub struct GetAlbumList2 {
     /// The name of the genre, e.g., "Rock".
     /// Required if [`GetAlbumList2::list_type`] is [`ListType::ByGenre`].
     pub genre: Option<String>,
-    /// TODO: Since 1.11.0
+    /// Since 1.11.0
     /// Only return albums in the music folder with the given ID. See [`GetMusicFolders`].
     pub music_folder_id: Option<String>,
 }
@@ -103,7 +103,7 @@ pub struct GetSongsByGenre {
     pub count: Option<u32>,
     /// The offset. Useful if you for example want to page through the list of songs.
     pub offset: Option<u32>,
-    /// TODO: Since 1.12.0
+    /// Since 1.12.0
     /// Only return albums in the music folder with the given ID. See [`GetMusicFolders`].
     pub music_folder_id: Option<String>,
 }
@@ -119,7 +119,7 @@ pub struct GetNowPlaying;
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getStarred>
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GetStarred {
-    /// TODO: since 1.12.0
+    /// Since 1.12.0
     /// Only return albums in the music folder with the given ID. See [`GetMusicFolders`].
     pub music_folder_id: Option<String>,
 }
@@ -129,7 +129,7 @@ pub struct GetStarred {
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getStarred2>
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GetStarred2 {
-    /// TODO: since 1.12.0
+    /// Since 1.12.0
     /// Only return albums in the music folder with the given ID. See [`GetMusicFolders`].
     pub music_folder_id: Option<String>,
 }

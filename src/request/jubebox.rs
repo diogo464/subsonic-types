@@ -29,7 +29,7 @@ pub struct JukeboxControl {
     /// Used by [`JukeboxAction::Skip`] and [`JukeboxAction::Remove`].
     /// Zero-based index of the song to skip to or remove.
     pub index: Option<u32>,
-    /// TODO: Since 1.7.0
+    /// Since 1.7.0
     /// Used by [`JukeboxAction::Skip`].
     /// Start playing this many seconds into the track.
     pub offset: Option<u32>,

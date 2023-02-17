@@ -9,8 +9,6 @@ mod wrapper;
 pub(crate) use subsonic_macro::SubsonicType;
 pub use wrapper::{Json, Xml};
 
-use chrono::{DateTime, Utc};
-
 pub enum Format {
     Json,
     Xml,
@@ -61,7 +59,6 @@ impl_subsonic_for_serde!(f64);
 impl_subsonic_for_serde!(bool);
 impl_subsonic_for_serde!(char);
 impl_subsonic_for_serde!(String);
-impl_subsonic_for_serde!(DateTime<Utc>);
 
 impl<T> SubsonicSerialize for Option<T>
 where
