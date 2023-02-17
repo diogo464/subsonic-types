@@ -11,43 +11,30 @@ pub enum ResponseStatus {
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct Response {
-    #[subsonic(xml(rename = "@status"))]
+    #[subsonic(attribute)]
     pub status: ResponseStatus,
-    #[subsonic(xml(rename = "@version"))]
+    #[subsonic(attribute)]
     pub version: Version,
-    #[subsonic_field]
-    #[subsonic(common(flatten))]
+    #[subsonic(flatten)]
     pub body: ResponseBody,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ResponseBody {
-    MusicFolders(#[subsonic_field] MusicFolders),
-    License(#[subsonic_field] License),
+    MusicFolders(MusicFolders),
+    License(License),
 }
 
 #[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct License {
-    #[subsonic(xml(rename = "@valid"))]
+    #[subsonic(attribute)]
     pub valid: bool,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@email")
-    )]
+    #[subsonic(attribute, optional)]
     pub email: Option<String>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@licenseExpires")
-    )]
+    #[subsonic(attribute, optional)]
     pub licence_expires: Option<DateTime<Utc>>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@trialExpires")
-    )]
+    #[subsonic(attribute, optional)]
     pub trial_expires: Option<DateTime<Utc>>,
 }
 
@@ -140,345 +127,257 @@ impl<'de> serde::Deserialize<'de> for Version {
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct MusicFolders {
-    #[subsonic_field]
     pub music_folder: Vec<MusicFolder>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct MusicFolder {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: u32,
-    #[subsonic(common(skip_serializing_if = "Option::is_none"), xml(rename = "@name"))]
+    #[subsonic(attribute, optional)]
     pub name: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct Indexes {
-    #[subsonic_field]
     pub shortcut: Vec<Artist>,
-    #[subsonic_field]
     pub index: Vec<Index>,
-    #[subsonic_field]
     pub child: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct Index {
-    #[subsonic(xml(rename = "@name"))]
+    #[subsonic(attribute)]
     pub name: String,
-    #[subsonic_field]
     pub artist: Vec<Artist>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct Artist {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: u32,
-    #[subsonic(xml(rename = "@name"))]
+    #[subsonic(attribute)]
     pub name: String,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@artistImageUrl")
-    )]
+    #[subsonic(attribute, optional)]
     pub artist_image_url: Option<String>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@starred")
-    )]
+    #[subsonic(attribute, optional)]
     pub starred: Option<DateTime<Utc>>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@userRating")
-    )]
+    #[subsonic(attribute, optional)]
     pub user_rating: Option<UserRating>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@averageRating")
-    )]
+    #[subsonic(attribute, optional)]
     pub averageRating: Option<AverageRating>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct Genres {
-    #[subsonic_field]
     pub genre: Vec<Genre>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct Genre {
-    #[subsonic(xml(rename = "@songCount"))]
+    #[subsonic(attribute)]
     pub song_count: u32,
-    #[subsonic(xml(rename = "@albumCount"))]
+    #[subsonic(attribute)]
     pub album_count: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct ArtistsID3 {
-    #[subsonic_field]
     pub index: Vec<IndexID3>,
-    #[subsonic(xml(rename = "@ignoredArticles"))]
+    #[subsonic(attribute)]
     pub ignored_articles: String,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct IndexID3 {
-    #[subsonic(xml(rename = "@name"))]
+    #[subsonic(attribute)]
     pub name: String,
-    #[subsonic_field]
     pub artist: Vec<ArtistID3>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct ArtistID3 {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: u32,
-    #[subsonic(xml(rename = "@name"))]
+    #[subsonic(attribute)]
     pub name: String,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@coverArt")
-    )]
+    #[subsonic(attribute, optional)]
     pub cover_art: Option<String>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@artistImageUrl")
-    )]
+    #[subsonic(attribute, optional)]
     pub artist_image_url: Option<String>,
-    #[subsonic(xml(rename = "@albumCount"))]
+    #[subsonic(attribute)]
     pub album_count: u32,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@starred")
-    )]
+    #[subsonic(attribute, optional)]
     pub starred: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct ArtistWithAlbumsID3 {
-    #[subsonic(common(flatten))]
-    #[subsonic_field]
+    #[subsonic(flatten)]
     pub artist: ArtistID3,
-    #[subsonic_field]
     pub album: Vec<AlbumID3>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct AlbumID3 {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: u32,
-    #[subsonic(xml(rename = "@name"))]
+    #[subsonic(attribute)]
     pub name: String,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@artist")
-    )]
+    #[subsonic(attribute, optional)]
     pub artist: Option<String>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@artistId")
-    )]
+    #[subsonic(attribute, optional)]
     pub artist_id: Option<String>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@coverArt")
-    )]
+    #[subsonic(attribute, optional)]
     pub cover_art: Option<String>,
-    #[subsonic(xml(rename = "@songCount"))]
+    #[subsonic(attribute)]
     pub song_count: u32,
-    #[subsonic(xml(rename = "@duration"))]
+    #[subsonic(attribute)]
     pub duration: u32,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@playCount")
-    )]
+    #[subsonic(attribute, optional)]
     pub play_count: Option<u64>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@created")
-    )]
+    #[subsonic(attribute, optional)]
     pub created: Option<DateTime<Utc>>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@starred")
-    )]
+    #[subsonic(attribute, optional)]
     pub starred: Option<DateTime<Utc>>,
-    #[subsonic(common(skip_serializing_if = "Option::is_none"), xml(rename = "@year"))]
+    #[subsonic(attribute, optional)]
     pub year: Option<u32>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@genre")
-    )]
+    #[subsonic(attribute, optional)]
     pub genre: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct AlbumWithSongsID3 {
-    #[subsonic(common(flatten))]
-    #[subsonic_field]
+    #[subsonic(flatten)]
     pub album: AlbumID3,
-    #[subsonic_field]
     pub song: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Videos {
-    #[subsonic_field]
     pub video: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct VideoInfo {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: String,
-    #[subsonic_field]
     pub captions: Vec<Captions>,
-    #[subsonic(xml(rename = "audioTrack"))]
-    #[subsonic_field]
     pub audio_track: Vec<AudioTrack>,
-    #[subsonic_field]
     pub conversion: Vec<VideoConversion>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Captions {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: String,
-    #[subsonic(xml(rename = "@name"))]
+    #[subsonic(attribute, optional)]
     pub format: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct AudioTrack {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: String,
-    #[subsonic(xml(rename = "@name"))]
+    #[subsonic(attribute, optional)]
     pub name: Option<String>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@languageCode")
-    )]
+    #[subsonic(attribute, optional)]
     pub language_code: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct VideoConversion {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: String,
-    #[subsonic(xml(rename = "@name"))]
+    #[subsonic(attribute, optional)]
     pub bit_rate: Option<u32>,
-    #[subsonic(xml(rename = "@audioTrackId"))]
+    #[subsonic(attribute, optional)]
     pub audio_track_id: Option<u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Directory {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: String,
-    #[subsonic(xml(rename = "@parent"))]
+    #[subsonic(attribute, optional)]
     pub parent: Option<String>,
-    #[subsonic(xml(rename = "@name"))]
+    #[subsonic(attribute)]
     pub name: String,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@starred")
-    )]
+    #[subsonic(attribute, optional)]
     pub starred: Option<DateTime<Utc>>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@userRating")
-    )]
+    #[subsonic(attribute, optional)]
     pub user_rating: Option<UserRating>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@averageRating")
-    )]
+    #[subsonic(attribute, optional)]
     pub average_rating: Option<AverageRating>,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none"),
-        xml(rename = "@playCount")
-    )]
+    #[subsonic(attribute, optional)]
     pub play_count: Option<u64>,
-    #[subsonic_field]
     pub child: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Child {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: String,
-    #[subsonic(xml(rename = "@parent"))]
+    #[subsonic(attribute, optional)]
     pub parent: Option<String>,
-    #[subsonic(xml(rename = "@isDir"))]
+    #[subsonic(attribute)]
     pub is_dir: bool,
-    #[subsonic(xml(rename = "@title"))]
+    #[subsonic(attribute)]
     pub title: String,
-    #[subsonic(xml(rename = "@album"))]
+    #[subsonic(attribute, optional)]
     pub album: Option<String>,
-    #[subsonic(xml(rename = "@artist"))]
+    #[subsonic(attribute, optional)]
     pub artist: Option<String>,
-    #[subsonic(xml(rename = "@track"))]
+    #[subsonic(attribute, optional)]
     pub track: Option<u32>,
-    #[subsonic(xml(rename = "@year"))]
+    #[subsonic(attribute, optional)]
     pub year: Option<u32>,
-    #[subsonic(xml(rename = "@genre"))]
+    #[subsonic(attribute, optional)]
     pub genre: Option<String>,
-    #[subsonic(xml(rename = "@coverArt"))]
+    #[subsonic(attribute, optional)]
     pub cover_art: Option<String>,
-    #[subsonic(xml(rename = "@size"))]
+    #[subsonic(attribute, optional)]
     pub size: Option<u64>,
-    #[subsonic(xml(rename = "@contentType"))]
+    #[subsonic(attribute, optional)]
     pub content_type: Option<String>,
-    #[subsonic(xml(rename = "@suffix"))]
+    #[subsonic(attribute, optional)]
     pub suffix: Option<String>,
-    #[subsonic(xml(rename = "@transcodedContentType"))]
+    #[subsonic(attribute, optional)]
     pub transcoded_content_type: Option<String>,
-    #[subsonic(xml(rename = "@transcodedSuffix"))]
+    #[subsonic(attribute, optional)]
     pub transcoded_suffix: Option<String>,
-    #[subsonic(xml(rename = "@duration"))]
+    #[subsonic(attribute, optional)]
     pub duration: Option<u32>,
-    #[subsonic(xml(rename = "@bitRate"))]
+    #[subsonic(attribute, optional)]
     pub bit_rate: Option<u32>,
-    #[subsonic(xml(rename = "@path"))]
+    #[subsonic(attribute, optional)]
     pub path: Option<String>,
-    #[subsonic(xml(rename = "@isVideo"))]
+    #[subsonic(attribute, optional)]
     pub is_video: Option<bool>,
-    #[subsonic(xml(rename = "@userRating"))]
+    #[subsonic(attribute, optional)]
     pub user_rating: Option<UserRating>,
-    #[subsonic(xml(rename = "@averageRating"))]
+    #[subsonic(attribute, optional)]
     pub average_rating: Option<AverageRating>,
-    #[subsonic(xml(rename = "@playCount"))]
+    #[subsonic(attribute, optional)]
     pub play_count: Option<u64>,
-    #[subsonic(xml(rename = "@discNumber"))]
+    #[subsonic(attribute, optional)]
     pub disc_number: Option<u32>,
-    #[subsonic(xml(rename = "@created"))]
+    #[subsonic(attribute, optional)]
     pub created: Option<DateTime<Utc>>,
-    #[subsonic(xml(rename = "@starred"))]
+    #[subsonic(attribute, optional)]
     pub starred: Option<DateTime<Utc>>,
-    #[subsonic(xml(rename = "@albumId"))]
+    #[subsonic(attribute, optional)]
     pub album_id: Option<String>,
-    #[subsonic(xml(rename = "@artistId"))]
+    #[subsonic(attribute, optional)]
     pub artist_id: Option<String>,
-    #[subsonic(xml(rename = "@type"))]
+    #[subsonic(attribute, optional)]
     pub media_type: Option<MediaType>,
-    #[subsonic(xml(rename = "@bookmarkPosition"))]
+    #[subsonic(attribute, optional)]
     pub bookmark_position: Option<u64>,
-    #[subsonic(xml(rename = "@originalWidth"))]
+    #[subsonic(attribute, optional)]
     pub original_width: Option<u32>,
-    #[subsonic(xml(rename = "@originalHeight"))]
+    #[subsonic(attribute, optional)]
     pub original_height: Option<u32>,
 }
 
@@ -635,212 +534,185 @@ impl std::cmp::Eq for AverageRating {}
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct NowPlaying {
-    #[subsonic_field]
     pub entry: Vec<NowPlayingEntry>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct NowPlayingEntry {
-    #[subsonic(common(flatten))]
-    #[subsonic_field]
+    #[subsonic(flatten)]
     pub child: Child,
-    #[subsonic(xml(rename = "@username"))]
+    #[subsonic(attribute)]
     pub username: String,
-    #[subsonic(xml(rename = "@minutesAgo"))]
+    #[subsonic(attribute)]
     pub minutes_ago: u32,
-    #[subsonic(xml(rename = "@playerId"))]
+    #[subsonic(attribute)]
     pub player_id: u32,
-    #[subsonic(
-        common(skip_serializing_if = "Option::is_none",),
-        xml(rename = "@playerName")
-    )]
+    #[subsonic(attribute, optional)]
     pub player_name: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct SearchResult {
-    #[subsonic(xml(rename = "@offset"))]
+    #[subsonic(attribute)]
     pub offset: u32,
-    #[subsonic(xml(rename = "@totalHits"))]
+    #[subsonic(attribute)]
     pub total_hits: u32,
-    #[subsonic(xml(rename = "match"))]
-    #[subsonic_field]
+    #[subsonic(rename = "match")]
     pub matches: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct SearchResult2 {
-    #[subsonic_field]
     pub artist: Vec<Artist>,
-    #[subsonic_field]
     pub album: Vec<Child>,
-    #[subsonic_field]
     pub song: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct SearchResult3 {
-    #[subsonic_field]
     pub artist: Vec<ArtistID3>,
-    #[subsonic_field]
     pub album: Vec<AlbumID3>,
-    #[subsonic_field]
     pub song: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Playlists {
-    #[subsonic_field]
     pub playlists: Vec<Playlist>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct Playlist {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: String,
-    #[subsonic(xml(rename = "@name"))]
+    #[subsonic(attribute)]
     pub name: String,
-    #[subsonic(xml(rename = "@comment"))]
+    #[subsonic(attribute, optional)]
     pub comment: Option<String>,
-    #[subsonic(xml(rename = "@owner"))]
+    #[subsonic(attribute, optional)]
     pub owner: Option<String>,
-    #[subsonic(xml(rename = "@public"))]
+    #[subsonic(attribute, optional)]
     pub public: Option<bool>,
-    #[subsonic(xml(rename = "@songCount"))]
+    #[subsonic(attribute)]
     pub song_count: u32,
-    #[subsonic(xml(rename = "@duration"))]
+    #[subsonic(attribute)]
     pub duration: u32,
-    #[subsonic(xml(rename = "@created"))]
+    #[subsonic(attribute)]
     pub created: DateTime<Utc>,
-    #[subsonic(xml(rename = "@changed"))]
+    #[subsonic(attribute, optional)]
     pub changed: DateTime<Utc>,
-    #[subsonic(xml(rename = "@coverArt"))]
+    #[subsonic(attribute, optional)]
     pub cover_art: Option<String>,
     pub allowed_user: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct PlaylistWithSongs {
-    #[subsonic(common(flatten))]
-    #[subsonic_field]
+    #[subsonic(flatten)]
     pub playlist: Playlist,
-    #[subsonic_field]
     pub entry: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct JukeboxStatus {
-    #[subsonic(xml(rename = "@currentIndex"))]
+    #[subsonic(attribute)]
     pub current_index: u32,
-    #[subsonic(xml(rename = "@playing"))]
+    #[subsonic(attribute)]
     pub playing: bool,
-    #[subsonic(xml(rename = "@gain"))]
+    #[subsonic(attribute)]
     pub gain: f32,
-    #[subsonic(xml(rename = "@position"))]
+    #[subsonic(attribute, optional)]
     pub position: Option<u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct JukeboxPlaylist {
-    #[subsonic(common(flatten))]
-    #[subsonic_field]
+    #[subsonic(flatten)]
     pub status: JukeboxStatus,
-    #[subsonic_field]
     pub entry: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct ChatMessages {
-    #[subsonic_field]
     pub chat_message: Vec<ChatMessage>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct ChatMessage {
-    #[subsonic(xml(rename = "@username"))]
+    #[subsonic(attribute)]
     pub username: String,
-    #[subsonic(xml(rename = "@time"))]
+    #[subsonic(attribute)]
     pub time: DateTime<Utc>,
-    #[subsonic(xml(rename = "@message"))]
+    #[subsonic(attribute)]
     pub message: String,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct AlbumList {
-    #[subsonic_field]
     pub album: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct AlbumList2 {
-    #[subsonic_field]
     pub album: Vec<AlbumID3>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Songs {
-    #[subsonic_field]
     pub song: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Lyrics {
-    #[subsonic(xml(rename = "@artist"))]
+    #[subsonic(attribute)]
     pub artist: Option<String>,
-    #[subsonic(xml(rename = "@title"))]
+    #[subsonic(attribute)]
     pub title: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Podcasts {
-    #[subsonic_field]
     pub channel: Vec<PodcastChannel>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct PodcastChannel {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: String,
-    #[subsonic(xml(rename = "@url"))]
+    #[subsonic(attribute)]
     pub url: String,
-    #[subsonic(xml(rename = "@title"))]
+    #[subsonic(attribute)]
     pub title: Option<String>,
-    #[subsonic(xml(rename = "@description"))]
+    #[subsonic(attribute)]
     pub description: Option<String>,
-    #[subsonic(xml(rename = "@coverArt"))]
+    #[subsonic(attribute, optional)]
     pub cover_art: Option<String>,
-    #[subsonic(xml(rename = "@originalImageUrl"))]
+    #[subsonic(attribute, optional)]
     pub original_image_url: Option<String>,
-    #[subsonic(xml(rename = "@status"))]
+    #[subsonic(attribute)]
     pub status: PodcastStatus,
-    #[subsonic(xml(rename = "@errorMessage"))]
+    #[subsonic(attribute, optional)]
     pub error_message: Option<String>,
-    #[subsonic_field]
     pub episode: Vec<PodcastEpisode>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct NewestPodcasts {
-    #[subsonic_field]
     pub episode: Vec<PodcastEpisode>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct PodcastEpisode {
-    #[subsonic(common(flatten))]
-    #[subsonic_field]
+    #[subsonic(flatten)]
     pub child: Child,
-    #[subsonic(xml(rename = "@streamId"))]
+    #[subsonic(attribute, optional)]
     pub stream_id: Option<String>,
-    #[subsonic(xml(rename = "@channelId"))]
+    #[subsonic(attribute)]
     pub channel_id: String,
-    #[subsonic(xml(rename = "@description"))]
+    #[subsonic(attribute, optional)]
     pub description: Option<String>,
-    #[subsonic(xml(rename = "@status"))]
+    #[subsonic(attribute)]
     pub status: PodcastStatus,
-    #[subsonic(xml(rename = "@publishDate"))]
+    #[subsonic(attribute, optional)]
     pub publish_date: Option<DateTime<Utc>>,
 }
 
@@ -854,237 +726,203 @@ pub enum PodcastStatus {
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct InternetRadioStations {
-    #[subsonic_field]
     pub internet_radio_station: Vec<InternetRadioStation>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct InternetRadioStation {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: String,
-    #[subsonic(xml(rename = "@name"))]
+    #[subsonic(attribute)]
     pub name: String,
-    #[subsonic(xml(rename = "@streamUrl"))]
+    #[subsonic(attribute)]
     pub stream_url: String,
-    #[subsonic(xml(rename = "@homePageUrl"))]
+    #[subsonic(attribute, optional)]
     pub home_page_url: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Bookmarks {
-    #[subsonic_field]
     pub bookmark: Vec<Bookmark>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Bookmark {
-    #[subsonic(xml(rename = "@position"))]
+    #[subsonic(attribute)]
     pub position: u64,
-    #[subsonic(xml(rename = "@username"))]
+    #[subsonic(attribute)]
     pub username: String,
-    #[subsonic(xml(rename = "@comment"))]
+    #[subsonic(attribute, optional)]
     pub comment: Option<String>,
-    #[subsonic(xml(rename = "@created"))]
+    #[subsonic(attribute)]
     pub created: DateTime<Utc>,
-    #[subsonic(xml(rename = "@changed"))]
+    #[subsonic(attribute, optional)]
     pub changed: DateTime<Utc>,
-    #[subsonic_field]
     pub entry: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct PlayQueue {
-    #[subsonic(xml(rename = "@current"))]
+    #[subsonic(attribute)]
     pub current: Option<u64>,
-    #[subsonic(xml(rename = "@position"))]
+    #[subsonic(attribute, optional)]
     pub position: Option<u64>,
-    #[subsonic(xml(rename = "@username"))]
+    #[subsonic(attribute)]
     pub username: String,
-    #[subsonic(xml(rename = "@changed"))]
+    #[subsonic(attribute)]
     pub changed: DateTime<Utc>,
     /// Name of client app
-    #[subsonic(xml(rename = "@changedBy"))]
+    #[subsonic(attribute)]
     pub changed_by: String,
-    #[subsonic_field]
     pub entry: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Shares {
-    #[subsonic_field]
     pub share: Vec<Share>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Share {
-    #[subsonic(xml(rename = "@id"))]
+    #[subsonic(attribute)]
     pub id: String,
-    #[subsonic(xml(rename = "@url"))]
+    #[subsonic(attribute)]
     pub url: String,
-    #[subsonic(xml(rename = "@description"))]
+    #[subsonic(attribute, optional)]
     pub description: Option<String>,
-    #[subsonic(xml(rename = "@username"))]
+    #[subsonic(attribute)]
     pub username: String,
-    #[subsonic(xml(rename = "@created"))]
+    #[subsonic(attribute)]
     pub created: DateTime<Utc>,
-    #[subsonic(xml(rename = "@expires"))]
+    #[subsonic(attribute, optional)]
     pub expires: Option<DateTime<Utc>>,
-    #[subsonic(xml(rename = "@lastVisited"))]
+    #[subsonic(attribute, optional)]
     pub last_visited: Option<DateTime<Utc>>,
-    #[subsonic(xml(rename = "@visitCount"))]
+    #[subsonic(attribute)]
     pub visit_count: u64,
-    #[subsonic_field]
     pub entry: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Starred {
-    #[subsonic_field]
     pub song: Vec<Child>,
-    #[subsonic_field]
     pub album: Vec<Child>,
-    #[subsonic_field]
     pub artist: Vec<Artist>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct AlbumInfo {
     pub notes: Vec<String>,
-    #[subsonic(xml(rename = "musicBrainzId"))]
     pub music_brainz_id: Vec<String>,
-    #[subsonic(xml(rename = "lastFmUrl"))]
     pub last_fm_url: Vec<String>,
-    #[subsonic(xml(rename = "smallImageUrl"))]
     pub small_image_url: Vec<String>,
-    #[subsonic(xml(rename = "mediumImageUrl"))]
     pub medium_image_url: Vec<String>,
-    #[subsonic(xml(rename = "largeImageUrl"))]
     pub large_image_url: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct ArtistInfoBase {
-    #[subsonic(xml(rename = "biography"))]
     pub biography: Vec<String>,
-    #[subsonic(xml(rename = "musicBrainzId"))]
     pub music_brainz_id: Vec<String>,
-    #[subsonic(xml(rename = "lastFmUrl"))]
     pub last_fm_url: Vec<String>,
-    #[subsonic(xml(rename = "smallImageUrl"))]
     pub small_image_url: Vec<String>,
-    #[subsonic(xml(rename = "mediumImageUrl"))]
     pub medium_image_url: Vec<String>,
-    #[subsonic(xml(rename = "largeImageUrl"))]
     pub large_image_url: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct ArtistInfo {
-    #[subsonic_field]
-    #[subsonic(common(flatten))]
+    #[subsonic(flatten)]
     pub info: ArtistInfoBase,
-    #[subsonic_field]
     pub similar_artist: Vec<Artist>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
-#[subsonic(common(rename_all = "camelCase"))]
 pub struct ArtistInfo2 {
-    #[subsonic_field]
-    #[subsonic(common(flatten))]
+    #[subsonic(flatten)]
     pub info: ArtistInfoBase,
-    #[subsonic_field]
     pub similar_artist: Vec<ArtistID3>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct SimilarSongs {
-    #[subsonic_field]
     pub song: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct SimilarSongs2 {
-    #[subsonic_field]
     pub song: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct TopSongs {
-    #[subsonic_field]
     pub song: Vec<Child>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Starred2 {
-    #[subsonic_field]
     pub song: Vec<Child>,
-    #[subsonic_field]
     pub album: Vec<AlbumID3>,
-    #[subsonic_field]
     pub artist: Vec<ArtistID3>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct ScanStatus {
-    #[subsonic(xml(rename = "@scanning"))]
+    #[subsonic(attribute)]
     pub scanning: bool,
-    #[subsonic(xml(rename = "@count"))]
+    #[subsonic(attribute, optional)]
     pub count: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Users {
-    #[subsonic_field]
     pub user: Vec<User>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct User {
-    #[subsonic(xml(rename = "@username"))]
+    #[subsonic(attribute)]
     pub username: String,
-    #[subsonic(xml(rename = "@email"))]
+    #[subsonic(attribute, optional)]
     pub email: Option<String>,
-    #[subsonic(xml(rename = "@scrobblingEnabled"))]
+    #[subsonic(attribute)]
     pub scrobbling_enabled: bool,
-    #[subsonic(xml(rename = "@maxBitRate"))]
+    #[subsonic(attribute, optional)]
     pub max_bit_rate: Option<u64>,
-    #[subsonic(xml(rename = "@adminRole"))]
+    #[subsonic(attribute)]
     pub admin_role: bool,
-    #[subsonic(xml(rename = "@settingsRole"))]
+    #[subsonic(attribute)]
     pub settings_role: bool,
-    #[subsonic(xml(rename = "@downloadRole"))]
+    #[subsonic(attribute)]
     pub download_role: bool,
-    #[subsonic(xml(rename = "@uploadRole"))]
+    #[subsonic(attribute)]
     pub upload_role: bool,
-    #[subsonic(xml(rename = "@playlistRole"))]
+    #[subsonic(attribute)]
     pub playlist_role: bool,
-    #[subsonic(xml(rename = "@coverArtRole"))]
+    #[subsonic(attribute)]
     pub cover_art_role: bool,
-    #[subsonic(xml(rename = "@commentRole"))]
+    #[subsonic(attribute)]
     pub comment_role: bool,
-    #[subsonic(xml(rename = "@podcastRole"))]
+    #[subsonic(attribute)]
     pub podcast_role: bool,
-    #[subsonic(xml(rename = "@streamRole"))]
+    #[subsonic(attribute)]
     pub stream_role: bool,
-    #[subsonic(xml(rename = "@jukeboxRole"))]
+    #[subsonic(attribute)]
     pub jukebox_role: bool,
-    #[subsonic(xml(rename = "@shareRole"))]
+    #[subsonic(attribute)]
     pub share_role: bool,
-    #[subsonic(xml(rename = "@videoConversionRole"))]
+    #[subsonic(attribute)]
     pub video_conversion_role: bool,
-    #[subsonic(xml(rename = "@avatarLastChanged"))]
+    #[subsonic(attribute, optional)]
     pub avatar_last_changed: Option<DateTime<Utc>>,
     pub folder: Vec<u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Error {
-    #[subsonic(xml(rename = "@code"))]
+    #[subsonic(attribute)]
     pub code: u32,
-    #[subsonic(xml(rename = "@message"))]
+    #[subsonic(attribute)]
     pub message: Option<String>,
 }

@@ -1,6 +1,20 @@
-pub trait SubsonicSerialize<'a>: 'a {
-    type ToJson: serde::Serialize + From<&'a Self>;
-    type ToXml: serde::Serialize + From<&'a Self>;
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct Version(pub u32);
+
+pub enum Format {
+    Json,
+    Xml,
+}
+
+pub trait SubsonicSerialize {
+    fn serialize<S>(
+        &self,
+        serializer: S,
+        version: Version,
+        format: Format,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer;
 }
 
 pub trait SubsonicDeserialize: Sized {
@@ -204,10 +218,9 @@ struct License2 {
 
 #[derive(serde::Serialize)]
 struct Fooo {
-    #[serde(rename="ua")]
+    #[serde(rename = "ua")]
     #[serde(skip)]
-
-    a: u32
+    a: u32,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
