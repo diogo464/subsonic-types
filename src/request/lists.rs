@@ -1,5 +1,7 @@
-use crate::request::browsing::{GetGenres, GetMusicFolders};
 use serde::{Deserialize, Serialize};
+
+#[allow(unused)]
+use crate::request::browsing::{GetGenres, GetMusicFolders};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

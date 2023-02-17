@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
+#[allow(unused)]
 use crate::{common::Milliseconds, request::browsing::GetMusicFolders};
 
 /// Returns a listing of files matching the given search criteria. Supports paging through the result.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#search>
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[deprecated(note = "Use `Search2` instead")]
 pub struct Search {
     /// Artist to search for.
     pub artist: Option<String>,

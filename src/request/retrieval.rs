@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+#[allow(unused)]
 use crate::{
     common::Seconds,
     request::browsing::{GetMusicDirectory, GetVideoInfo},

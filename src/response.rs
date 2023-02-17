@@ -168,7 +168,7 @@ pub struct Artist {
     #[subsonic(attribute, optional)]
     pub user_rating: Option<UserRating>,
     #[subsonic(attribute, optional)]
-    pub averageRating: Option<AverageRating>,
+    pub average_rating: Option<AverageRating>,
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
