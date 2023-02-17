@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    common::{AverageRating, DateTime, MediaType, UserRating},
+    common::{AverageRating, DateTime, MediaType, UserRating, Version},
     SubsonicType,
 };
 
@@ -19,14 +19,73 @@ pub struct Response {
     pub status: ResponseStatus,
     #[subsonic(attribute)]
     pub version: Version,
-    #[subsonic(flatten)]
+    #[subsonic(flatten, complex)]
     pub body: ResponseBody,
+}
+
+impl Response {
+    pub fn ok(version: Version, body: ResponseBody) -> Self {
+        Self {
+            status: ResponseStatus::Ok,
+            version,
+            body,
+        }
+    }
+
+    pub fn failed(version: Version, error: Error) -> Self {
+        Self {
+            status: ResponseStatus::Failed,
+            version,
+            body: ResponseBody::Error(error),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub enum ResponseBody {
     MusicFolders(MusicFolders),
+    Indexes(Indexes),
+    Directory(Directory),
+    Genres(Genres),
+    Artists(ArtistsID3),
+    Artist(Artist),
+    Album(AlbumWithSongsID3),
+    Song(Child),
+    Videos(Videos),
+    VideoInfo(VideoInfo),
+    NowPlaying(NowPlaying),
+    SearchResult(SearchResult),
+    SearchResult2(SearchResult2),
+    SearchResult3(SearchResult3),
+    Playlists(Playlists),
+    Playlist(Playlist),
+    JukeboxStatus(JukeboxStatus),
+    JukeboxPlaylist(JukeboxPlaylist),
     License(License),
+    Users(Users),
+    User(User),
+    ChatMessages(ChatMessages),
+    AlbumList(AlbumList),
+    AlbumList2(AlbumList2),
+    RandomSongs(Songs),
+    SongsByGenre(Songs),
+    Lyrics(Lyrics),
+    Podcasts(Podcasts),
+    NewestPodcasts(NewestPodcasts),
+    InternetRadioStations(InternetRadioStations),
+    Bookmarks(Bookmarks),
+    PlayQueue(PlayQueue),
+    Shares(Shares),
+    Starred(Starred),
+    Starred2(Starred2),
+    AlbumInfo(AlbumInfo),
+    ArtistInfo(ArtistInfo),
+    ArtistInfo2(ArtistInfo2),
+    SimilarSongs(SimilarSongs),
+    SimilarSongs2(SimilarSongs2),
+    TopSongs(TopSongs),
+    ScanStatus(ScanStatus),
+    Error(Error),
 }
 
 #[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
@@ -41,101 +100,12 @@ pub struct License {
     pub trial_expires: Option<DateTime>,
 }
 
-#[derive(Debug)]
-pub struct InvalidVersion;
-
-impl std::fmt::Display for InvalidVersion {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Invalid version")
-    }
-}
-
-impl std::error::Error for InvalidVersion {}
-
-#[derive(Debug, Default, Copy, Clone, PartialEq, Hash)]
-pub struct Version {
-    pub major: u64,
-    pub minor: u64,
-    pub patch: u64,
-}
-impl_subsonic_for_serde!(Version);
-
-impl Version {
-    pub fn new(major: u64, minor: u64, patch: u64) -> Self {
-        Self {
-            major,
-            minor,
-            patch,
-        }
-    }
-}
-
-impl std::fmt::Display for Version {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
-    }
-}
-
-impl std::str::FromStr for Version {
-    type Err = InvalidVersion;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut parts = s.split('.');
-        let major = parts
-            .next()
-            .ok_or(InvalidVersion)?
-            .parse()
-            .map_err(|_| InvalidVersion)?;
-        let minor = parts
-            .next()
-            .ok_or(InvalidVersion)?
-            .parse()
-            .map_err(|_| InvalidVersion)?;
-        let patch = parts
-            .next()
-            .ok_or(InvalidVersion)?
-            .parse()
-            .map_err(|_| InvalidVersion)?;
-        Ok(Self::new(major, minor, patch))
-    }
-}
-
-impl<N1, N2, N3> From<(N1, N2, N3)> for Version
-where
-    N1: Into<u64>,
-    N2: Into<u64>,
-    N3: Into<u64>,
-{
-    fn from(value: (N1, N2, N3)) -> Self {
-        Self::new(value.0.into(), value.1.into(), value.2.into())
-    }
-}
-
-impl serde::Serialize for Version {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.to_string().serialize(serializer)
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for Version {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        s.parse().map_err(serde::de::Error::custom)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct MusicFolders {
     pub music_folder: Vec<MusicFolder>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct MusicFolder {
     #[subsonic(attribute)]
     pub id: u32,
@@ -143,21 +113,21 @@ pub struct MusicFolder {
     pub name: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Indexes {
     pub shortcut: Vec<Artist>,
     pub index: Vec<Index>,
     pub child: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Index {
     #[subsonic(attribute)]
     pub name: String,
     pub artist: Vec<Artist>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Artist {
     #[subsonic(attribute)]
     pub id: u32,
@@ -173,12 +143,12 @@ pub struct Artist {
     pub average_rating: Option<AverageRating>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Genres {
     pub genre: Vec<Genre>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Genre {
     #[subsonic(attribute)]
     pub song_count: u32,
@@ -186,21 +156,21 @@ pub struct Genre {
     pub album_count: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct ArtistsID3 {
     pub index: Vec<IndexID3>,
     #[subsonic(attribute)]
     pub ignored_articles: String,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct IndexID3 {
     #[subsonic(attribute)]
     pub name: String,
     pub artist: Vec<ArtistID3>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct ArtistID3 {
     #[subsonic(attribute)]
     pub id: u32,
@@ -216,14 +186,14 @@ pub struct ArtistID3 {
     pub starred: Option<DateTime>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct ArtistWithAlbumsID3 {
     #[subsonic(flatten)]
     pub artist: ArtistID3,
     pub album: Vec<AlbumID3>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct AlbumID3 {
     #[subsonic(attribute)]
     pub id: u32,
@@ -251,19 +221,19 @@ pub struct AlbumID3 {
     pub genre: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct AlbumWithSongsID3 {
     #[subsonic(flatten)]
     pub album: AlbumID3,
     pub song: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Videos {
     pub video: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct VideoInfo {
     #[subsonic(attribute)]
     pub id: String,
@@ -272,7 +242,7 @@ pub struct VideoInfo {
     pub conversion: Vec<VideoConversion>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Captions {
     #[subsonic(attribute)]
     pub id: String,
@@ -280,7 +250,7 @@ pub struct Captions {
     pub format: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct AudioTrack {
     #[subsonic(attribute)]
     pub id: String,
@@ -290,7 +260,7 @@ pub struct AudioTrack {
     pub language_code: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct VideoConversion {
     #[subsonic(attribute)]
     pub id: String,
@@ -300,7 +270,7 @@ pub struct VideoConversion {
     pub audio_track_id: Option<u32>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Directory {
     #[subsonic(attribute)]
     pub id: String,
@@ -319,7 +289,7 @@ pub struct Directory {
     pub child: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Child {
     #[subsonic(attribute)]
     pub id: String,
@@ -385,12 +355,12 @@ pub struct Child {
     pub original_height: Option<u32>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct NowPlaying {
     pub entry: Vec<NowPlayingEntry>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct NowPlayingEntry {
     #[subsonic(flatten)]
     pub child: Child,
@@ -404,7 +374,7 @@ pub struct NowPlayingEntry {
     pub player_name: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct SearchResult {
     #[subsonic(attribute)]
     pub offset: u32,
@@ -414,26 +384,26 @@ pub struct SearchResult {
     pub matches: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct SearchResult2 {
     pub artist: Vec<Artist>,
     pub album: Vec<Child>,
     pub song: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct SearchResult3 {
     pub artist: Vec<ArtistID3>,
     pub album: Vec<AlbumID3>,
     pub song: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Playlists {
     pub playlists: Vec<Playlist>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Playlist {
     #[subsonic(attribute)]
     pub id: String,
@@ -458,14 +428,14 @@ pub struct Playlist {
     pub allowed_user: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct PlaylistWithSongs {
     #[subsonic(flatten)]
     pub playlist: Playlist,
     pub entry: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct JukeboxStatus {
     #[subsonic(attribute)]
     pub current_index: u32,
@@ -477,19 +447,19 @@ pub struct JukeboxStatus {
     pub position: Option<u32>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct JukeboxPlaylist {
     #[subsonic(flatten)]
     pub status: JukeboxStatus,
     pub entry: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct ChatMessages {
     pub chat_message: Vec<ChatMessage>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct ChatMessage {
     #[subsonic(attribute)]
     pub username: String,
@@ -499,22 +469,22 @@ pub struct ChatMessage {
     pub message: String,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct AlbumList {
     pub album: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct AlbumList2 {
     pub album: Vec<AlbumID3>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Songs {
     pub song: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Lyrics {
     #[subsonic(attribute)]
     pub artist: Option<String>,
@@ -522,12 +492,12 @@ pub struct Lyrics {
     pub title: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Podcasts {
     pub channel: Vec<PodcastChannel>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct PodcastChannel {
     #[subsonic(attribute)]
     pub id: String,
@@ -548,12 +518,12 @@ pub struct PodcastChannel {
     pub episode: Vec<PodcastEpisode>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct NewestPodcasts {
     pub episode: Vec<PodcastEpisode>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct PodcastEpisode {
     #[subsonic(flatten)]
     pub child: Child,
@@ -579,12 +549,18 @@ pub enum PodcastStatus {
 }
 impl_subsonic_for_serde!(PodcastStatus);
 
+impl Default for PodcastStatus {
+    fn default() -> Self {
+        PodcastStatus::Error
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct InternetRadioStations {
     pub internet_radio_station: Vec<InternetRadioStation>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct InternetRadioStation {
     #[subsonic(attribute)]
     pub id: String,
@@ -601,7 +577,7 @@ pub struct Bookmarks {
     pub bookmark: Vec<Bookmark>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Bookmark {
     #[subsonic(attribute)]
     pub position: u64,
@@ -616,7 +592,7 @@ pub struct Bookmark {
     pub entry: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct PlayQueue {
     #[subsonic(attribute)]
     pub current: Option<u64>,
@@ -632,12 +608,12 @@ pub struct PlayQueue {
     pub entry: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Shares {
     pub share: Vec<Share>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Share {
     #[subsonic(attribute)]
     pub id: String,
@@ -658,14 +634,14 @@ pub struct Share {
     pub entry: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Starred {
     pub song: Vec<Child>,
     pub album: Vec<Child>,
     pub artist: Vec<Artist>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct AlbumInfo {
     pub notes: Vec<String>,
     pub music_brainz_id: Vec<String>,
@@ -675,7 +651,7 @@ pub struct AlbumInfo {
     pub large_image_url: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct ArtistInfoBase {
     pub biography: Vec<String>,
     pub music_brainz_id: Vec<String>,
@@ -685,7 +661,7 @@ pub struct ArtistInfoBase {
     pub large_image_url: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct ArtistInfo {
     #[subsonic(flatten)]
     pub info: ArtistInfoBase,
@@ -699,29 +675,29 @@ pub struct ArtistInfo2 {
     pub similar_artist: Vec<ArtistID3>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct SimilarSongs {
     pub song: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct SimilarSongs2 {
     pub song: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct TopSongs {
     pub song: Vec<Child>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Starred2 {
     pub song: Vec<Child>,
     pub album: Vec<AlbumID3>,
     pub artist: Vec<ArtistID3>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct ScanStatus {
     #[subsonic(attribute)]
     pub scanning: bool,
@@ -734,7 +710,7 @@ pub struct Users {
     pub user: Vec<User>,
 }
 
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct User {
     #[subsonic(attribute)]
     pub username: String,
@@ -779,4 +755,20 @@ pub struct Error {
     pub code: u32,
     #[subsonic(attribute)]
     pub message: Option<String>,
+}
+
+impl Error {
+    pub fn new(code: u32) -> Self {
+        Error {
+            code,
+            message: None,
+        }
+    }
+
+    pub fn with_message(code: u32, message: impl Into<String>) -> Self {
+        Error {
+            code,
+            message: Some(message.into()),
+        }
+    }
 }

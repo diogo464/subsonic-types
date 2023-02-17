@@ -11,6 +11,7 @@ struct Attributes {
     attribute: bool,
     optional: bool,
     flatten: bool,
+    is_complex: bool,
 }
 
 impl Attributes {
@@ -39,6 +40,7 @@ impl Attributes {
         let mut attribute = false;
         let mut optional = false;
         let mut flatten = false;
+        let mut is_complex = false;
 
         for meta in metas {
             match &meta {
@@ -65,6 +67,9 @@ impl Attributes {
                             syn::NestedMeta::Meta(syn::Meta::Path(p)) if p.is_ident("flatten") => {
                                 flatten = true;
                             }
+                            syn::NestedMeta::Meta(syn::Meta::Path(p)) if p.is_ident("complex") => {
+                                is_complex = true;
+                            }
                             _ => {
                                 return Err(syn::Error::new_spanned(
                                     n,
@@ -83,6 +88,7 @@ impl Attributes {
             attribute,
             optional,
             flatten,
+            is_complex,
         })
     }
 
@@ -106,9 +112,11 @@ impl Attributes {
             base_name
         };
 
-        field.attrs.push(syn::parse_quote! {
-            #[serde(rename = #field_name)]
-        });
+        if !(self.is_complex && format == Format::Xml) {
+            field.attrs.push(syn::parse_quote! {
+                #[serde(rename = #field_name)]
+            });
+        }
 
         if self.optional {
             field.attrs.push(syn::parse_quote! {
@@ -117,9 +125,15 @@ impl Attributes {
         }
 
         if self.flatten {
-            field.attrs.push(syn::parse_quote! {
-                #[serde(flatten)]
-            });
+            if self.is_complex && format == Format::Xml {
+                field.attrs.push(syn::parse_quote! {
+                    #[serde(rename="$value")]
+                });
+            } else {
+                field.attrs.push(syn::parse_quote! {
+                    #[serde(flatten)]
+                });
+            }
         }
 
         Ok(())

@@ -20,6 +20,18 @@ impl From<DateTime> for chrono::DateTime<chrono::FixedOffset> {
     }
 }
 
+impl Default for DateTime {
+    fn default() -> Self {
+        use chrono::offset::TimeZone;
+        Self::from(
+            chrono::FixedOffset::east_opt(0)
+                .unwrap()
+                .with_ymd_and_hms(1970, 1, 1, 0, 0, 0)
+                .unwrap(),
+        )
+    }
+}
+
 /// A duration in milliseconds.
 /// When used to represent an instant in time, it is relative to the Unix epoch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -545,7 +557,114 @@ impl std::hash::Hash for AverageRating {
     }
 }
 
-impl std::cmp::Eq for AverageRating {}
+#[derive(Debug)]
+pub struct InvalidVersion;
+
+impl std::fmt::Display for InvalidVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Invalid version")
+    }
+}
+
+impl std::error::Error for InvalidVersion {}
+
+/// An API version.
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Version {
+    pub major: u64,
+    pub minor: u64,
+    pub patch: u64,
+}
+impl_subsonic_for_serde!(Version);
+
+impl Version {
+    pub const V1_16_1: Self = Self::new(1, 16, 1);
+    pub const V1_16_0: Self = Self::new(1, 16, 0);
+    pub const V1_15_0: Self = Self::new(1, 15, 0);
+    pub const V1_14_0: Self = Self::new(1, 14, 0);
+    pub const V1_13_0: Self = Self::new(1, 13, 0);
+    pub const V1_12_0: Self = Self::new(1, 12, 0);
+    pub const V1_11_0: Self = Self::new(1, 11, 0);
+    pub const V1_10_2: Self = Self::new(1, 10, 2);
+    pub const V1_9_0: Self = Self::new(1, 9, 0);
+    pub const V1_8_0: Self = Self::new(1, 8, 0);
+    pub const V1_7_0: Self = Self::new(1, 7, 0);
+    pub const V1_6_0: Self = Self::new(1, 6, 0);
+    pub const V1_5_0: Self = Self::new(1, 5, 0);
+    pub const V1_4_0: Self = Self::new(1, 4, 0);
+    pub const V1_3_0: Self = Self::new(1, 3, 0);
+    pub const V1_2_0: Self = Self::new(1, 2, 0);
+    pub const V1_1_1: Self = Self::new(1, 1, 1);
+    pub const V1_1_0: Self = Self::new(1, 1, 0);
+
+    pub const fn new(major: u64, minor: u64, patch: u64) -> Self {
+        Self {
+            major,
+            minor,
+            patch,
+        }
+    }
+}
+
+impl std::fmt::Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
+    }
+}
+
+impl std::str::FromStr for Version {
+    type Err = InvalidVersion;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parts = s.split('.');
+        let major = parts
+            .next()
+            .ok_or(InvalidVersion)?
+            .parse()
+            .map_err(|_| InvalidVersion)?;
+        let minor = parts
+            .next()
+            .ok_or(InvalidVersion)?
+            .parse()
+            .map_err(|_| InvalidVersion)?;
+        let patch = parts
+            .next()
+            .ok_or(InvalidVersion)?
+            .parse()
+            .map_err(|_| InvalidVersion)?;
+        Ok(Self::new(major, minor, patch))
+    }
+}
+
+impl<N1, N2, N3> From<(N1, N2, N3)> for Version
+where
+    N1: Into<u64>,
+    N2: Into<u64>,
+    N3: Into<u64>,
+{
+    fn from(value: (N1, N2, N3)) -> Self {
+        Self::new(value.0.into(), value.1.into(), value.2.into())
+    }
+}
+
+impl serde::Serialize for Version {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.to_string().serialize(serializer)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Version {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        s.parse().map_err(serde::de::Error::custom)
+    }
+}
 
 #[cfg(test)]
 mod tests {
