@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{common::Milliseconds, response::UserRating};
+use crate::{common::Milliseconds, request::lists::GetNowPlaying, response::UserRating};
 
 /// Attaches a star to a song, album or artist.
 ///

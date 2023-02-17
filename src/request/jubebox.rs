@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum JubeboxAction {
+pub enum JukeboxAction {
     Get,
     /// Since 1.7.0
     Status,
@@ -25,7 +25,7 @@ pub enum JubeboxAction {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct JukeboxControl {
     /// The operation to perform.
-    pub action: JubeboxAction,
+    pub action: JukeboxAction,
     /// Used by [`JukeboxAction::Skip`] and [`JukeboxAction::Remove`].
     /// Zero-based index of the song to skip to or remove.
     pub index: Option<u32>,

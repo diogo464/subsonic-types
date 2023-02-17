@@ -1,3 +1,4 @@
+use crate::request::browsing::{GetGenres, GetMusicFolders};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -33,16 +34,16 @@ pub struct GetAlbumList {
     /// The list offset. Useful if you for example want to page through the list of newest albums.
     pub offset: Option<u32>,
     /// The first year in the range. If 'fromYear > toYear' a reverse chronological list is returned.
-    /// Required if [`list_type`] is [`ListType::ByYear`].
+    /// Required if [`GetAlbumList::list_type`] is [`ListType::ByYear`].
     pub from_year: Option<u32>,
     /// The last year in the range.
-    /// Required if [`list_type`] is [`ListType::ByYear`].
+    /// Required if [`GetAlbumList::list_type`] is [`ListType::ByYear`].
     pub to_year: Option<u32>,
     /// The name of the genre, e.g., "Rock".
-    /// Required if [`list_type`] is [`ListType::ByGenre`].
+    /// Required if [`GetAlbumList::list_type`] is [`ListType::ByGenre`].
     pub genre: Option<String>,
     /// TODO: Since 1.11.0
-    /// Only return albums in the music folder with the given ID. See [`getMusicFolders`].
+    /// Only return albums in the music folder with the given ID. See [`GetMusicFolders`].
     pub music_folder_id: Option<String>,
 }
 
@@ -59,16 +60,16 @@ pub struct GetAlbumList2 {
     /// The list offset. Useful if you for example want to page through the list of newest albums.
     pub offset: Option<u32>,
     /// The first year in the range. If 'fromYear > toYear' a reverse chronological list is returned.
-    /// Required if [`list_type`] is [`ListType::ByYear`].
+    /// Required if [`GetAlbumList2::list_type`] is [`ListType::ByYear`].
     pub from_year: Option<u32>,
     /// The last year in the range.
-    /// Required if [`list_type`] is [`ListType::ByYear`].
+    /// Required if [`GetAlbumList2::list_type`] is [`ListType::ByYear`].
     pub to_year: Option<u32>,
     /// The name of the genre, e.g., "Rock".
-    /// Required if [`list_type`] is [`ListType::ByGenre`].
+    /// Required if [`GetAlbumList2::list_type`] is [`ListType::ByGenre`].
     pub genre: Option<String>,
     /// TODO: Since 1.11.0
-    /// Only return albums in the music folder with the given ID. See [`getMusicFolders`].
+    /// Only return albums in the music folder with the given ID. See [`GetMusicFolders`].
     pub music_folder_id: Option<String>,
 }
 

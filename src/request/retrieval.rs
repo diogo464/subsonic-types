@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::common::Seconds;
+use crate::{
+    common::Seconds,
+    request::browsing::{GetMusicDirectory, GetVideoInfo},
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Stream {
@@ -46,7 +49,7 @@ pub struct Download {
 /// It's supported by iOS and newer versions of Android.
 /// This method also supports adaptive bitrate streaming, see the bitRate parameter.
 ///
-/// For more information, see http://www.subsonic.org/pages/api.jsp#hls>
+/// For more information, see <http://www.subsonic.org/pages/api.jsp#hls>
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Hls {
     /// A string which uniquely identifies the file to stream. Obtained by calls to [`GetMusicDirectory`].
@@ -103,4 +106,3 @@ pub struct GetAvatar {
     /// The user in question.
     pub username: String,
 }
-

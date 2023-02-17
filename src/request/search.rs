@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::common::Milliseconds;
+use crate::{common::Milliseconds, request::browsing::GetMusicFolders};
 
 /// Returns a listing of files matching the given search criteria. Supports paging through the result.
 ///

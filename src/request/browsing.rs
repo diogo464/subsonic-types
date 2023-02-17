@@ -102,7 +102,7 @@ impl GetArtistInfo {
     pub const DEFAULT_INCLUDE_NOT_PRESENT: bool = false;
 }
 
-/// Similar to [`GetAristInfo`], but organizes music according to ID3 tags.
+/// Similar to [`GetArtistInfo`], but organizes music according to ID3 tags.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getArtistInfo2>
 #[derive(Debug, Clone, PartialEq)]
@@ -179,4 +179,3 @@ pub struct GetTopSongs {
 impl GetTopSongs {
     pub const DEFAULT_COUNT: u32 = 50;
 }
-
