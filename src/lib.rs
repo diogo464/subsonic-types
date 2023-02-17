@@ -1,189 +1,233 @@
-mod types;
-pub use types::*;
-
-pub(crate) use subsonic_macro::SubsonicType;
-
-pub trait SubsonicSerialize<'a>: 'a {
-    type ToJson: serde::Serialize + From<&'a Self>;
-    type ToXml: serde::Serialize + From<&'a Self>;
+pub enum Format {
+    Json,
+    Xml,
 }
 
-pub trait SubsonicDeserialize: Sized {
-    type FromJson: for<'de> serde::Deserialize<'de> + Into<Self>;
-    type FromXml: for<'de> serde::Deserialize<'de> + Into<Self>;
+pub trait SubsonicSerialize {
+    fn serialize<S>(&self, serializer: S, format: Format) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer;
 }
 
-pub trait SubsonicType<'a>: SubsonicSerialize<'a> + SubsonicDeserialize {}
+pub trait SubsonicDeserialize<'de>: Sized {
+    fn deserialize<D>(deserializer: D, format: Format) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>;
+}
 
-impl<'a, T: SubsonicSerialize<'a> + SubsonicDeserialize> SubsonicType<'a> for T {}
+pub trait SubsonicType<'de>: SubsonicSerialize + SubsonicDeserialize<'de> {}
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Json<'r, T>(&'r T);
+impl<'de, T: SubsonicSerialize + SubsonicDeserialize<'de>> SubsonicType<'de> for T {}
 
-impl<'r, T> serde::Serialize for Json<'r, T>
+impl<T> SubsonicSerialize for &T
 where
-    T: for<'a> SubsonicSerialize<'a>,
+    T: SubsonicSerialize,
 {
-    fn serialize<'s, S>(&'s self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S, format: Format) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        let wrapper = <T as SubsonicSerialize<'s>>::ToJson::from(&self.0);
-        wrapper.serialize(serializer)
+        T::serialize(*self, serializer, format)
     }
 }
 
-macro_rules! impl_subsonic_serde {
-    ($t:path) => {
-        impl<'a> SubsonicSerialize<'a> for $t {
-            type ToJson = &'a $t;
-            type ToXml = &'a $t;
+macro_rules! impl_format_wrapper {
+    ($t:ident, $f:expr) => {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        #[repr(transparent)]
+        pub struct $t<T>(T);
+
+        impl<T> $t<T> {
+            pub fn new(value: T) -> Self {
+                Self(value)
+            }
+
+            pub fn into_inner(self) -> T {
+                self.0
+            }
+
+            pub fn as_inner(&self) -> &T {
+                &self.0
+            }
+
+            pub fn as_inner_mut(&mut self) -> &mut T {
+                &mut self.0
+            }
+
+            pub fn map<U, F>(self, f: F) -> $t<U>
+            where
+                F: FnOnce(T) -> U,
+            {
+                $t(f(self.0))
+            }
         }
 
-        impl SubsonicDeserialize for $t {
-            type FromJson = $t;
-            type FromXml = $t;
+        impl<T> AsRef<T> for $t<T> {
+            fn as_ref(&self) -> &T {
+                &self.0
+            }
+        }
+
+        impl<T> From<T> for $t<T> {
+            fn from(value: T) -> Self {
+                Self(value)
+            }
+        }
+
+        impl<T> serde::Serialize for $t<T>
+        where
+            T: SubsonicSerialize,
+        {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: serde::Serializer,
+            {
+                T::serialize(&self.0, serializer, $f)
+            }
+        }
+
+        impl<'de, T> serde::Deserialize<'de> for $t<T>
+        where
+            T: SubsonicDeserialize<'de>,
+        {
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                T::deserialize(deserializer, $f).map(Self)
+            }
         }
     };
-
-    (@ $t:ident) => {};
 }
 
-const _: () = {
-    #[derive(serde::Serialize)]
-    struct ToJson<'a, T>(&'a Option<T>);
-    impl<'a, T: SubsonicSerialize<'a>> From<&'a Option<T>> for ToJson<'a, T::ToJson> {
-        fn from(value: &'a Option<T>) -> Self {
-            ToJson(
-                value
-                    .as_ref()
-                    .map(|v| <T as SubsonicSerialize<'a>>::ToJson::from(v)),
-            )
-        }
-    }
+impl_format_wrapper!(Json, Format::Json);
+impl_format_wrapper!(Xml, Format::Xml);
 
-    #[derive(serde::Serialize)]
-    struct ToXml<'a, T>(&'a Option<T>);
-    impl<'a, T: SubsonicSerialize<'a>> From<&'a Option<T>> for ToXml<'a, T::ToXml> {
-        fn from(value: &'a Option<T>) -> Self {
-            ToXml(
-                value
-                    .as_ref()
-                    .map(|v| <T as SubsonicSerialize<'a>>::ToXml::from(v)),
-            )
+macro_rules! impl_subsonic_for_serde {
+    ($t:path) => {
+        impl SubsonicSerialize for $t {
+            fn serialize<S>(&self, serializer: S, _: Format) -> Result<S::Ok, S::Error>
+            where
+                S: serde::Serializer,
+            {
+                <Self as serde::Serialize>::serialize(self, serializer)
+            }
         }
-    }
 
-    impl<'a, T> SubsonicSerialize<'a> for Option<T>
+        impl<'de> SubsonicDeserialize<'de> for $t {
+            fn deserialize<D>(deserializer: D, _: Format) -> Result<Self, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                <Self as serde::Deserialize<'de>>::deserialize(deserializer)
+            }
+        }
+    };
+}
+impl_subsonic_for_serde!(u8);
+impl_subsonic_for_serde!(u16);
+impl_subsonic_for_serde!(u32);
+impl_subsonic_for_serde!(u64);
+impl_subsonic_for_serde!(u128);
+impl_subsonic_for_serde!(usize);
+impl_subsonic_for_serde!(i8);
+impl_subsonic_for_serde!(i16);
+impl_subsonic_for_serde!(i32);
+impl_subsonic_for_serde!(i64);
+impl_subsonic_for_serde!(i128);
+impl_subsonic_for_serde!(isize);
+impl_subsonic_for_serde!(f32);
+impl_subsonic_for_serde!(f64);
+impl_subsonic_for_serde!(bool);
+impl_subsonic_for_serde!(char);
+impl_subsonic_for_serde!(String);
+
+impl<T> SubsonicSerialize for Option<T>
+where
+    T: SubsonicSerialize,
+{
+    fn serialize<S>(&self, serializer: S, format: crate::Format) -> Result<S::Ok, S::Error>
     where
-        T: SubsonicSerialize<'a>,
+        S: serde::Serializer,
     {
-        type ToJson = ToJson<'a, T::ToJson>;
-        type ToXml = ToXml<'a, T::ToXml>;
-    }
-
-    #[derive(serde::Deserialize)]
-    struct FromJson<T>(Option<T>);
-    impl<T: SubsonicDeserialize> From<FromJson<T::FromJson>> for Option<T> {
-        fn from(value: FromJson<T::FromJson>) -> Self {
-            value.0.map(Into::into)
+        match self {
+            Some(value) => value.serialize(serializer, format),
+            None => serializer.serialize_none(),
         }
     }
+}
 
-    #[derive(serde::Deserialize)]
-    struct FromXml<T>(Option<T>);
-    impl<T: SubsonicDeserialize> From<FromXml<T::FromXml>> for Option<T> {
-        fn from(value: FromXml<T::FromXml>) -> Self {
-            value.0.map(Into::into)
-        }
-    }
-
-    impl<T> SubsonicDeserialize for Option<T>
+impl<'de, T> SubsonicDeserialize<'de> for Option<T>
+where
+    T: SubsonicDeserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D, format: crate::Format) -> Result<Self, D::Error>
     where
-        T: SubsonicDeserialize,
+        D: serde::Deserializer<'de>,
     {
-        type FromJson = FromJson<T::FromJson>;
-        type FromXml = FromXml<T::FromXml>;
-    }
-};
-
-const _: () = {
-    #[derive(serde::Serialize)]
-    struct ToJson<'a, T>(&'a Vec<T>);
-    impl<'a, T: SubsonicSerialize<'a>> From<&'a Vec<T>> for ToJson<'a, T::ToJson> {
-        fn from(value: &'a Vec<T>) -> Self {
-            ToJson(
-                value
-                    .iter()
-                    .map(|v| <T as SubsonicSerialize<'a>>::ToJson::from(v))
-                    .collect(),
-            )
+        match format {
+            Format::Json => {
+                let value =
+                    <Option<crate::Json<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                Ok(value.map(crate::Json::into_inner))
+            }
+            Format::Xml => {
+                let value =
+                    <Option<crate::Xml<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                Ok(value.map(crate::Xml::into_inner))
+            }
         }
     }
+}
 
-    #[derive(serde::Serialize)]
-    struct ToXml<'a, T>(&'a Vec<T>);
-    impl<'a, T: SubsonicSerialize<'a>> From<&'a Vec<T>> for ToXml<'a, T::ToXml> {
-        fn from(value: &'a Vec<T>) -> Self {
-            ToXml(
-                value
-                    .iter()
-                    .map(|v| <T as SubsonicSerialize<'a>>::ToXml::from(v))
-                    .collect(),
-            )
-        }
-    }
-
-    impl<'a, T> SubsonicSerialize<'a> for Vec<T>
+impl<T> SubsonicSerialize for Vec<T>
+where
+    T: SubsonicSerialize,
+{
+    fn serialize<S>(&self, serializer: S, format: crate::Format) -> Result<S::Ok, S::Error>
     where
-        T: SubsonicSerialize<'a>,
+        S: serde::Serializer,
     {
-        type ToJson = ToJson<'a, T::ToJson>;
-        type ToXml = ToXml<'a, T::ToXml>;
-    }
-
-    #[derive(serde::Deserialize)]
-    struct FromJson<T>(Vec<T>);
-    impl<T: SubsonicDeserialize> From<FromJson<T::FromJson>> for Vec<T> {
-        fn from(value: FromJson<T::FromJson>) -> Self {
-            value.0.into_iter().map(Into::into).collect()
+        match format {
+            Format::Json => {
+                let value: &Vec<crate::Json<T>> =
+                    unsafe { std::mem::transmute::<&Vec<T>, &Vec<crate::Json<T>>>(self) };
+                <Vec<crate::Json<T>> as serde::Serialize>::serialize(value, serializer)
+            }
+            Format::Xml => {
+                let value: &Vec<crate::Xml<T>> =
+                    unsafe { std::mem::transmute::<&Vec<T>, &Vec<crate::Xml<T>>>(self) };
+                <Vec<crate::Xml<T>> as serde::Serialize>::serialize(value, serializer)
+            }
         }
     }
+}
 
-    #[derive(serde::Deserialize)]
-    struct FromXml<T>(Vec<T>);
-    impl<T: SubsonicDeserialize> From<FromXml<T::FromXml>> for Vec<T> {
-        fn from(value: FromXml<T::FromXml>) -> Self {
-            value.0.into_iter().map(Into::into).collect()
-        }
-    }
-
-    impl<T> SubsonicDeserialize for Vec<T>
+impl<'de, T> SubsonicDeserialize<'de> for Vec<T>
+where
+    T: SubsonicDeserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D, format: crate::Format) -> Result<Self, D::Error>
     where
-        T: SubsonicDeserialize,
+        D: serde::Deserializer<'de>,
     {
-        type FromJson = FromJson<T::FromJson>;
-        type FromXml = FromXml<T::FromXml>;
+        match format {
+            Format::Json => {
+                let value = <Vec<crate::Json<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                Ok(value.into_iter().map(crate::Json::into_inner).collect())
+            }
+            Format::Xml => {
+                let value = <Vec<crate::Xml<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                Ok(value.into_iter().map(crate::Xml::into_inner).collect())
+            }
+        }
     }
-};
+}
 
-impl_subsonic_serde!(u8);
-impl_subsonic_serde!(u16);
-impl_subsonic_serde!(u32);
-impl_subsonic_serde!(u64);
-impl_subsonic_serde!(i8);
-impl_subsonic_serde!(i16);
-impl_subsonic_serde!(i32);
-impl_subsonic_serde!(i64);
-impl_subsonic_serde!(f32);
-impl_subsonic_serde!(f64);
-impl_subsonic_serde!(bool);
-impl_subsonic_serde!(String);
-impl_subsonic_serde!(chrono::DateTime<chrono::Utc>);
-impl_subsonic_serde!(types::ResponseStatus);
-impl_subsonic_serde!(types::Version);
-impl_subsonic_serde!(types::UserRating);
-impl_subsonic_serde!(types::AverageRating);
-impl_subsonic_serde!(types::MediaType);
-impl_subsonic_serde!(types::PodcastStatus);
-impl_subsonic_serde!(types::ResponseBody);
+fn macro_helper_is_none<'a, T, U>(v: T) -> bool
+where
+    T: AsRef<&'a Option<U>>,
+    U: 'a,
+{
+    v.as_ref().is_none()
+}

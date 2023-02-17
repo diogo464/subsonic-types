@@ -20,7 +20,7 @@ pub struct Response {
     pub body: ResponseBody,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub enum ResponseBody {
     MusicFolders(MusicFolders),
     License(License),

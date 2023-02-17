@@ -86,7 +86,7 @@ impl Attributes {
         })
     }
 
-    fn apply(&self, field: &mut syn::Field) -> Result<()> {
+    fn apply(&self, format: Format, field: &mut syn::Field) -> Result<()> {
         let field_name = {
             let mut base_name = match &self.rename {
                 Some(name) => name.clone(),
@@ -99,7 +99,7 @@ impl Attributes {
                 ),
             };
 
-            if self.attribute {
+            if format == Format::Xml && self.attribute {
                 base_name.insert(0, '@');
             }
 
@@ -112,7 +112,7 @@ impl Attributes {
 
         if self.optional {
             field.attrs.push(syn::parse_quote! {
-                #[serde(skip_serializing_if = "Option::is_none")]
+                #[serde(skip_serializing_if = "crate::macro_helper_is_none")]
             });
         }
 
@@ -126,24 +126,42 @@ impl Attributes {
     }
 }
 
-fn apply_field_attributes(field: &mut syn::Field) -> Result<()> {
+fn apply_field_attributes(format: Format, field: &mut syn::Field) -> Result<()> {
     let attrs = Attributes::extract(&mut field.attrs)?;
-    attrs.apply(field)
+    attrs.apply(format, field)
 }
 
-fn input_apply_field_attributes(input: &mut syn::DeriveInput) -> Result<()> {
+fn input_apply_field_attributes(format: Format, input: &mut syn::DeriveInput) -> Result<()> {
     match &mut input.data {
         syn::Data::Struct(syn::DataStruct {
             fields: syn::Fields::Named(named),
             ..
         }) => {
             for field in named.named.iter_mut() {
-                apply_field_attributes(field)?;
+                apply_field_attributes(format, field)?;
             }
         }
-        _ => unimplemented!("Only structs are supported"),
+        syn::Data::Enum(syn::DataEnum { variants, .. }) => {
+            for variant in variants {
+                for field in variant.fields.iter_mut() {
+                    apply_field_attributes(format, field)?;
+                }
+            }
+        }
+        _ => unimplemented!("Only structs and enum are supported"),
     }
     Ok(())
+}
+
+fn serde_wrapper(format: Format) -> syn::Path {
+    let ident = syn::Ident::new(
+        match format {
+            Format::Json => "Json",
+            Format::Xml => "Xml",
+        },
+        proc_macro2::Span::call_site(),
+    );
+    syn::parse_quote!(crate::#ident)
 }
 
 struct SerializeOutput {
@@ -184,7 +202,7 @@ impl<'a> SerializeBuilder<'a> {
         self.append_se_lifetime(&mut patched);
         self.patch_field_types(&mut patched);
         self.append_phatom_field(&mut patched);
-        input_apply_field_attributes(&mut patched)?;
+        input_apply_field_attributes(self.format, &mut patched)?;
 
         Ok(patched)
     }
@@ -194,7 +212,7 @@ impl<'a> SerializeBuilder<'a> {
         let patched_ident = &patched.ident;
         let se_lifetime = self.se_lifetime;
 
-        let output = match &self.input.data {
+        let method_inner = match &self.input.data {
             syn::Data::Struct(syn::DataStruct {
                 fields: syn::Fields::Named(named),
                 ..
@@ -202,19 +220,36 @@ impl<'a> SerializeBuilder<'a> {
                 let field_idents = named.named.iter().map(|f| &f.ident);
 
                 quote::quote! {
-                    impl<#se_lifetime> From<&#se_lifetime #input_ident> for #patched_ident<#se_lifetime> {
-                        fn from(value: &#se_lifetime #input_ident) -> Self {
-                            Self {
-                                #(
-                                    #field_idents: From::from(&value.#field_idents),
-                                )*
-                                __subsonice_phantom: std::marker::PhantomData,
-                            }
-                        }
+                    Self {
+                        #(
+                            #field_idents: From::from(&value.#field_idents),
+                        )*
+                        __subsonice_phantom: std::marker::PhantomData,
                     }
                 }
             }
-            _ => unimplemented!("Only structs with named fields are supported for now"),
+            syn::Data::Enum(syn::DataEnum { variants, .. }) => {
+                let variant_idents = variants.iter().map(|v| &v.ident);
+
+                quote::quote! {
+                    match value {
+                        #(
+                            #input_ident::#variant_idents(v) => Self::#variant_idents(From::from(v)),
+                        )*
+                    }
+                }
+            }
+            _ => unimplemented!(
+                "Only structs with named fields and limited enums are supported for now"
+            ),
+        };
+
+        let output = quote::quote! {
+            impl<#se_lifetime> From<&#se_lifetime #input_ident> for #patched_ident<#se_lifetime> {
+                fn from(value: &#se_lifetime #input_ident) -> Self {
+                    #method_inner
+                }
+            }
         };
 
         Ok(output)
@@ -234,6 +269,9 @@ impl<'a> SerializeBuilder<'a> {
         patched
             .attrs
             .push(syn::parse_quote!(#[derive(serde::Serialize)]));
+        patched
+            .attrs
+            .push(syn::parse_quote!(#[serde(rename_all = "camelCase")]));
     }
 
     fn append_se_lifetime(&self, patched: &mut syn::DeriveInput) {
@@ -246,26 +284,29 @@ impl<'a> SerializeBuilder<'a> {
 
     fn patch_field_types(&self, patched: &mut syn::DeriveInput) {
         let lifetime = self.se_lifetime;
-        let assoc_ty = syn::Ident::new(
-            match self.format {
-                Format::Json => "ToJson",
-                Format::Xml => "ToXml",
-            },
-            proc_macro2::Span::call_site(),
-        );
+        let wrapper = serde_wrapper(self.format);
+
+        let patch_field = |field: &mut syn::Field| {
+            let ty = &mut field.ty;
+            *ty = syn::parse_quote!(#wrapper<&#lifetime #ty>);
+        };
 
         match &mut patched.data {
             syn::Data::Struct(syn::DataStruct {
                 fields: syn::Fields::Named(fields),
                 ..
             }) => {
-                for field in &mut fields.named {
-                    let ty = &mut field.ty;
-                    *ty =
-                        syn::parse_quote!(<#ty as crate::SubsonicSerialize<#lifetime>>::#assoc_ty);
-                }
+                fields.named.iter_mut().for_each(patch_field);
             }
-            _ => unimplemented!("Only structs with named fields are supported for now"),
+            syn::Data::Enum(syn::DataEnum { variants, .. }) => {
+                variants
+                    .iter_mut()
+                    .flat_map(|v| v.fields.iter_mut())
+                    .for_each(patch_field);
+            }
+            _ => unimplemented!(
+                "Only structs with named fields and limited enums are supported for now"
+            ),
         }
     }
 
@@ -285,7 +326,17 @@ impl<'a> SerializeBuilder<'a> {
                     ty: syn::parse_quote!(std::marker::PhantomData<&#lifetime ()>),
                 });
             }
-            _ => unimplemented!("Only structs with named fields are supported for now"),
+            syn::Data::Enum(syn::DataEnum { variants, .. }) => {
+                variants.push(syn::Variant {
+                    ident: syn::Ident::new("__subsonice_phantom", proc_macro2::Span::call_site()),
+                    fields: syn::Fields::Unnamed(
+                        syn::parse_quote! {(std::marker::PhantomData<&#lifetime ()>)},
+                    ),
+                    attrs: Default::default(),
+                    discriminant: None,
+                });
+            }
+            _ => unimplemented!("Only structs with named fields and enums are supported for now"),
         }
     }
 }
@@ -321,7 +372,7 @@ impl<'a> DeserializeBuilder<'a> {
         self.patch_ident(&mut patched);
         self.append_derive_deserialize(&mut patched);
         self.patch_field_types(&mut patched);
-        input_apply_field_attributes(&mut patched)?;
+        input_apply_field_attributes(self.format, &mut patched)?;
 
         Ok(patched)
     }
@@ -329,8 +380,9 @@ impl<'a> DeserializeBuilder<'a> {
     fn impl_into(&self, patched: &syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
         let input_ident = &self.input.ident;
         let patched_ident = &patched.ident;
+        let wrapper = serde_wrapper(self.format);
 
-        let output = match &self.input.data {
+        let inner = match &self.input.data {
             syn::Data::Struct(syn::DataStruct {
                 fields: syn::Fields::Named(named),
                 ..
@@ -338,18 +390,35 @@ impl<'a> DeserializeBuilder<'a> {
                 let field_idents = named.named.iter().map(|f| &f.ident);
 
                 quote::quote! {
-                    impl Into<#input_ident> for #patched_ident {
-                        fn into(self) -> #input_ident {
-                            #input_ident {
-                                #(
-                                    #field_idents: Into::into(self.#field_idents),
-                                )*
-                            }
-                        }
+                    #input_ident {
+                        #(
+                            #field_idents: #wrapper::into_inner(self.#field_idents),
+                        )*
                     }
                 }
             }
-            _ => unimplemented!("Only structs with named fields are supported for now"),
+            syn::Data::Enum(syn::DataEnum { variants, .. }) => {
+                let variant_idents = variants.iter().map(|v| &v.ident);
+
+                quote::quote! {
+                    match self {
+                        #(
+                            #patched_ident::#variant_idents(v) => #input_ident::#variant_idents(#wrapper::into_inner(v)),
+                        )*
+                    }
+                }
+            }
+            _ => unimplemented!(
+                "Only structs with named fields and limited enums are supported for now"
+            ),
+        };
+
+        let output = quote::quote! {
+            impl Into<#input_ident> for #patched_ident {
+                fn into(self) -> #input_ident {
+                    #inner
+                }
+            }
         };
 
         Ok(output)
@@ -369,28 +438,34 @@ impl<'a> DeserializeBuilder<'a> {
         patched
             .attrs
             .push(syn::parse_quote!(#[derive(serde::Deserialize)]));
+        patched
+            .attrs
+            .push(syn::parse_quote!(#[serde(rename_all = "camelCase")]));
     }
 
     fn patch_field_types(&self, patched: &mut syn::DeriveInput) {
-        let assoc_ty = syn::Ident::new(
-            match self.format {
-                Format::Json => "FromJson",
-                Format::Xml => "FromXml",
-            },
-            proc_macro2::Span::call_site(),
-        );
+        let wrapper = serde_wrapper(self.format);
+        let patch_field = |field: &mut syn::Field| {
+            let ty = &mut field.ty;
+            *ty = syn::parse_quote!(#wrapper<#ty>);
+        };
 
         match &mut patched.data {
             syn::Data::Struct(syn::DataStruct {
                 fields: syn::Fields::Named(fields),
                 ..
             }) => {
-                for field in &mut fields.named {
-                    let ty = &mut field.ty;
-                    *ty = syn::parse_quote!(<#ty as crate::SubsonicDeserialize>::#assoc_ty);
-                }
+                fields.named.iter_mut().for_each(patch_field);
             }
-            _ => unimplemented!("Only structs with named fields are supported for now"),
+            syn::Data::Enum(syn::DataEnum { variants, .. }) => {
+                variants
+                    .iter_mut()
+                    .flat_map(|v| v.fields.iter_mut())
+                    .for_each(patch_field);
+            }
+            _ => unimplemented!(
+                "Only structs with named fields and limited enums are supported for now"
+            ),
         }
     }
 }
@@ -421,6 +496,9 @@ pub fn expand(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
 
     let output = quote::quote! {
         const _: () = {
+            use serde::Deserialize;
+            use serde::Serialize;
+
             #se_json_patched
             #se_json_impl
             #de_json_patched
@@ -431,14 +509,47 @@ pub fn expand(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
             #de_xml_patched
             #de_xml_impl
 
-            impl<#se_lifetime> crate::SubsonicSerialize<#se_lifetime> for #input_ident {
-                type ToJson = #se_json_ident<#se_lifetime>;
-                type ToXml = #se_xml_ident<#se_lifetime>;
+            impl SubsonicSerialize for #input_ident {
+                fn serialize<S>(
+                    &self,
+                    serializer: S,
+                    format: crate::Format,
+                ) -> Result<S::Ok, S::Error>
+                where
+                    S: serde::Serializer,
+                {
+                    match format {
+                        crate::Format::Json => {
+                            let value = #se_json_ident::from(self);
+                            value.serialize(serializer)
+                        }
+                        crate::Format::Xml => {
+                            let value = #se_xml_ident::from(self);
+                            value.serialize(serializer)
+                        }
+                    }
+                }
             }
 
-            impl crate::SubsonicDeserialize for #input_ident {
-                type FromJson = #de_json_ident;
-                type FromXml = #de_xml_ident;
+            impl<'de> SubsonicDeserialize<'de> for #input_ident {
+                fn deserialize<D>(
+                    deserializer: D,
+                    format: crate::Format,
+                ) -> Result<Self, D::Error>
+                where
+                    D: serde::Deserializer<'de>,
+                {
+                    match format {
+                        crate::Format::Json => {
+                            let value = #de_json_ident::deserialize(deserializer)?;
+                            Ok(value.into())
+                        }
+                        crate::Format::Xml => {
+                            let value = #de_xml_ident::deserialize(deserializer)?;
+                            Ok(value.into())
+                        }
+                    }
+                }
             }
         };
     };
