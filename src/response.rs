@@ -9,6 +9,7 @@ pub enum ResponseStatus {
     Ok,
     Failed,
 }
+impl_subsonic_for_serde!(ResponseStatus);
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Response {
@@ -55,6 +56,7 @@ pub struct Version {
     pub minor: u64,
     pub patch: u64,
 }
+impl_subsonic_for_serde!(Version);
 
 impl Version {
     pub fn new(major: u64, minor: u64, patch: u64) -> Self {
@@ -389,6 +391,7 @@ pub enum MediaType {
     AudioBook,
     Video,
 }
+impl_subsonic_for_serde!(MediaType);
 
 #[derive(Debug)]
 pub struct InvalidUserRating;
@@ -401,8 +404,10 @@ impl std::fmt::Display for InvalidUserRating {
 
 impl std::error::Error for InvalidUserRating {}
 
+// TODO: Move this to common
 #[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub struct UserRating(u32);
+impl_subsonic_for_serde!(UserRating);
 
 impl UserRating {
     pub fn new(value: u32) -> Result<Self, InvalidUserRating> {
@@ -469,6 +474,7 @@ impl std::fmt::Display for InvalidAverageRating {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct AverageRating(f32);
+impl_subsonic_for_serde!(AverageRating);
 
 impl AverageRating {
     pub fn new(value: f32) -> Result<Self, InvalidAverageRating> {
@@ -598,7 +604,7 @@ pub struct Playlist {
     pub duration: u32,
     #[subsonic(attribute)]
     pub created: DateTime<Utc>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute)]
     pub changed: DateTime<Utc>,
     #[subsonic(attribute, optional)]
     pub cover_art: Option<String>,
@@ -724,6 +730,7 @@ pub enum PodcastStatus {
     Error,
     Skipped,
 }
+impl_subsonic_for_serde!(PodcastStatus);
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct InternetRadioStations {
@@ -757,7 +764,7 @@ pub struct Bookmark {
     pub comment: Option<String>,
     #[subsonic(attribute)]
     pub created: DateTime<Utc>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute)]
     pub changed: DateTime<Utc>,
     pub entry: Vec<Child>,
 }

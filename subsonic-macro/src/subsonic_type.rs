@@ -509,7 +509,7 @@ pub fn expand(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
             #de_xml_patched
             #de_xml_impl
 
-            impl SubsonicSerialize for #input_ident {
+            impl crate::SubsonicSerialize for #input_ident {
                 fn serialize<S>(
                     &self,
                     serializer: S,
@@ -531,7 +531,7 @@ pub fn expand(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
                 }
             }
 
-            impl<'de> SubsonicDeserialize<'de> for #input_ident {
+            impl<'de> crate::SubsonicDeserialize<'de> for #input_ident {
                 fn deserialize<D>(
                     deserializer: D,
                     format: crate::Format,

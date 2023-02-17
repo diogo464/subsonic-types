@@ -1,3 +1,16 @@
+#[macro_use]
+pub(crate) mod macros;
+
+pub mod common;
+pub mod request;
+pub mod response;
+
+mod wrapper;
+pub(crate) use subsonic_macro::SubsonicType;
+pub use wrapper::{Json, Xml};
+
+use chrono::{DateTime, Utc};
+
 pub enum Format {
     Json,
     Xml,
@@ -31,99 +44,6 @@ where
     }
 }
 
-macro_rules! impl_format_wrapper {
-    ($t:ident, $f:expr) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-        #[repr(transparent)]
-        pub struct $t<T>(T);
-
-        impl<T> $t<T> {
-            pub fn new(value: T) -> Self {
-                Self(value)
-            }
-
-            pub fn into_inner(self) -> T {
-                self.0
-            }
-
-            pub fn as_inner(&self) -> &T {
-                &self.0
-            }
-
-            pub fn as_inner_mut(&mut self) -> &mut T {
-                &mut self.0
-            }
-
-            pub fn map<U, F>(self, f: F) -> $t<U>
-            where
-                F: FnOnce(T) -> U,
-            {
-                $t(f(self.0))
-            }
-        }
-
-        impl<T> AsRef<T> for $t<T> {
-            fn as_ref(&self) -> &T {
-                &self.0
-            }
-        }
-
-        impl<T> From<T> for $t<T> {
-            fn from(value: T) -> Self {
-                Self(value)
-            }
-        }
-
-        impl<T> serde::Serialize for $t<T>
-        where
-            T: SubsonicSerialize,
-        {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: serde::Serializer,
-            {
-                T::serialize(&self.0, serializer, $f)
-            }
-        }
-
-        impl<'de, T> serde::Deserialize<'de> for $t<T>
-        where
-            T: SubsonicDeserialize<'de>,
-        {
-            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                T::deserialize(deserializer, $f).map(Self)
-            }
-        }
-    };
-}
-
-impl_format_wrapper!(Json, Format::Json);
-impl_format_wrapper!(Xml, Format::Xml);
-
-macro_rules! impl_subsonic_for_serde {
-    ($t:path) => {
-        impl SubsonicSerialize for $t {
-            fn serialize<S>(&self, serializer: S, _: Format) -> Result<S::Ok, S::Error>
-            where
-                S: serde::Serializer,
-            {
-                <Self as serde::Serialize>::serialize(self, serializer)
-            }
-        }
-
-        impl<'de> SubsonicDeserialize<'de> for $t {
-            fn deserialize<D>(deserializer: D, _: Format) -> Result<Self, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                <Self as serde::Deserialize<'de>>::deserialize(deserializer)
-            }
-        }
-    };
-}
 impl_subsonic_for_serde!(u8);
 impl_subsonic_for_serde!(u16);
 impl_subsonic_for_serde!(u32);
@@ -141,6 +61,7 @@ impl_subsonic_for_serde!(f64);
 impl_subsonic_for_serde!(bool);
 impl_subsonic_for_serde!(char);
 impl_subsonic_for_serde!(String);
+impl_subsonic_for_serde!(DateTime<Utc>);
 
 impl<T> SubsonicSerialize for Option<T>
 where
@@ -224,6 +145,7 @@ where
     }
 }
 
+#[allow(unused)]
 fn macro_helper_is_none<'a, T, U>(v: T) -> bool
 where
     T: AsRef<&'a Option<U>>,
