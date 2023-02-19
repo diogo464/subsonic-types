@@ -98,67 +98,108 @@ impl<'de> serde::Deserialize<'de> for Printer {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let response = Response {
-        status: ResponseStatus::Ok,
-        version: Version::new(1, 16, 1),
-        body: Some(ResponseBody::License(License {
-            valid: true,
-            email: Some("mail@example.com".into()),
-            ..Default::default()
-        })),
-    };
+    use serde::{Deserialize, Serialize};
 
-    let expected = Response::ok(
-        Version::new(1, 4, 0),
-        ResponseBody::Directory(Directory {
-            id: "11".into(),
-            parent: Some("1".into()),
-            name: "Arrival".into(),
-            child: vec![
-                Child {
-                    id: "111".into(),
-                    parent: Some("11".into()),
-                    title: "Dancing Queen".into(),
-                    is_dir: false,
-                    album: Some("Arrival".into()),
-                    artist: Some("ABBA".into()),
-                    track: Some(7),
-                    year: Some(1978),
-                    genre: Some("Pop".into()),
-                    cover_art: Some("24".into()),
-                    size: Some(8421341),
-                    content_type: Some("audio/mpeg".into()),
-                    suffix: Some("mp3".into()),
-                    duration: Some(146),
-                    bit_rate: Some(128),
-                    path: Some("ABBA/Arrival/Dancing Queen.mp3".into()),
-                    ..Default::default()
-                },
-                Child {
-                    id: "112".into(),
-                    parent: Some("11".into()),
-                    title: "Money, Money, Money".into(),
-                    is_dir: false,
-                    album: Some("Arrival".into()),
-                    artist: Some("ABBA".into()),
-                    track: Some(7),
-                    year: Some(1978),
-                    genre: Some("Pop".into()),
-                    cover_art: Some("25".into()),
-                    size: Some(4910028),
-                    content_type: Some("audio/flac".into()),
-                    suffix: Some("flac".into()),
-                    transcoded_content_type: Some("audio/mpeg".into()),
-                    transcoded_suffix: Some("mp3".into()),
-                    duration: Some(208),
-                    bit_rate: Some(128),
-                    path: Some("ABBA/Arrival/Money, Money, Money.mp3".into()),
-                    ..Default::default()
-                },
-            ],
-            ..Default::default()
-        }),
-    );
+    #[derive(Serialize, Deserialize)]
+    struct Foo {
+        x: u32,
+        #[serde(flatten)]
+        body: Option<Bar>,
+    }
+
+    #[derive(Serialize, Deserialize)]
+    enum Bar {
+        Int(u32),
+        Float(f32),
+    }
+
+    let foo = Foo {
+        x: 5,
+        body: Some(Bar::Float(2.1)),
+    };
+    let serialized = serde_json::to_string(&foo)?;
+    println!("{}", serialized);
+
+    return Ok(());
+
+    // use subsonic_types::{
+    //     common::Version,
+    //     response::{License, Response, ResponseBody},
+    // };
+    // let response = Response::ok(
+    //     Version::V1_16_1,
+    //     ResponseBody::License(License {
+    //         valid: true,
+    //         ..Default::default()
+    //     }),
+    // );
+    // let serialized =
+    //     r#"{"subsonic-response":{"status":"ok","version":"1.16.1","license":{"valid":true}}}"#;
+    // let deserialized:License = subsonic_types::from_json(serialized)?;
+    // assert_eq!(response, deserialized);
+    // return Ok(());
+
+    // let response = Response {
+    //     status: ResponseStatus::Ok,
+    //     version: Version::new(1, 16, 1),
+    //     body: Some(ResponseBody::License(License {
+    //         valid: true,
+    //         email: Some("mail@example.com".into()),
+    //         ..Default::default()
+    //     })),
+    // };
+
+    // let expected = Response::ok(
+    //     Version::new(1, 4, 0),
+    //     ResponseBody::Directory(Directory {
+    //         id: "11".into(),
+    //         parent: Some("1".into()),
+    //         name: "Arrival".into(),
+    //         child: vec![
+    //             Child {
+    //                 id: "111".into(),
+    //                 parent: Some("11".into()),
+    //                 title: "Dancing Queen".into(),
+    //                 is_dir: false,
+    //                 album: Some("Arrival".into()),
+    //                 artist: Some("ABBA".into()),
+    //                 track: Some(7),
+    //                 year: Some(1978),
+    //                 genre: Some("Pop".into()),
+    //                 cover_art: Some("24".into()),
+    //                 size: Some(8421341),
+    //                 content_type: Some("audio/mpeg".into()),
+    //                 suffix: Some("mp3".into()),
+    //                 duration: Some(146),
+    //                 bit_rate: Some(128),
+    //                 path: Some("ABBA/Arrival/Dancing Queen.mp3".into()),
+    //                 ..Default::default()
+    //             },
+    //             Child {
+    //                 id: "112".into(),
+    //                 parent: Some("11".into()),
+    //                 title: "Money, Money, Money".into(),
+    //                 is_dir: false,
+    //                 album: Some("Arrival".into()),
+    //                 artist: Some("ABBA".into()),
+    //                 track: Some(7),
+    //                 year: Some(1978),
+    //                 genre: Some("Pop".into()),
+    //                 cover_art: Some("25".into()),
+    //                 size: Some(4910028),
+    //                 content_type: Some("audio/flac".into()),
+    //                 suffix: Some("flac".into()),
+    //                 transcoded_content_type: Some("audio/mpeg".into()),
+    //                 transcoded_suffix: Some("mp3".into()),
+    //                 duration: Some(208),
+    //                 bit_rate: Some(128),
+    //                 path: Some("ABBA/Arrival/Money, Money, Money.mp3".into()),
+    //                 ..Default::default()
+    //             },
+    //         ],
+    //         ..Default::default()
+    //     }),
+    // );
     //let output = subsonic_types::to_json(&expected)?;
     //println!("{}", output);
 

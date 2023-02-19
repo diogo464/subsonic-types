@@ -651,18 +651,6 @@ impl Version {
             patch,
         }
     }
-
-    pub(crate) const fn from_u32(value: u32) -> Self {
-        Self {
-            major: (value >> 16) as u8,
-            minor: (value >> 8) as u8,
-            patch: value as u8,
-        }
-    }
-
-    pub(crate) const fn as_u32(self) -> u32 {
-        (self.major as u32) << 16 | (self.minor as u32) << 8 | self.patch as u32
-    }
 }
 
 impl std::fmt::Display for Version {

@@ -1243,7 +1243,6 @@ mod tests {
             <artist id="5432" name="AC/DC" coverArt="ar-5432" albumCount="15">
                 <album id="11047" name="Back In Black" coverArt="al-11047" songCount="10" created="2004-11-08T23:33:11" duration="2534" artist="AC/DC" artistId="5432"/>
                 <album id="11048" name="Black Ice" coverArt="al-11048" songCount="15" created="2008-10-30T09:20:52" duration="3332" artist="AC/DC" artistId="5432"/>
-                <album id="11049" name="Blow up your Video" coverArt="al-11049" songCount="10" created="2004-11-27T19:22:45" duration="2578" artist="AC/DC" artistId="5432"/>
                 <album id="11050" name="Flick Of The Switch" coverArt="al-11050" songCount="10" created="2004-11-27T19:22:51" duration="2222" artist="AC/DC" artistId="5432"/>
                 <album id="11051" name="Fly On The Wall" coverArt="al-11051" songCount="10" created="2004-11-27T19:22:57" duration="2405" artist="AC/DC" artistId="5432"/>
                 <album id="11052" name="For Those About To Rock" coverArt="al-11052" songCount="10" created="2004-11-08T23:35:02" duration="2403" artist="AC/DC" artistId="5432"/>
@@ -1362,7 +1361,11 @@ mod tests {
                 ],
             }),
         );
-        eprintln!("{}", crate::to_xml(&expected).unwrap());
         let value = crate::from_xml(xml).unwrap();
+
+        eprintln!("{:#?}", expected);
+        eprintln!("{:#?}", value);
+
+        assert_eq!(expected, value);
     }
 }

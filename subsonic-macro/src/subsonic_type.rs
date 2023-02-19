@@ -21,7 +21,7 @@ struct Attributes {
     /// If it is then this translates to `#[serde(flatten)]`.
     flatten: bool,
     /// Is this a choice type?
-    /// If it is a choice type, and it is faltten then in xml it translates to `#[serde(rename="$value")]`.
+    /// If it is a choice type and the format is xml then the flatten attribute is applied and the field is renamed to `#[serde(rename="$value")]`.
     /// In json it is ignored and only the flatten attribute is used.
     choice: bool,
     /// Is this an xml value?
@@ -29,6 +29,10 @@ struct Attributes {
     /// In json this translates to `#[serde(rename = "value")]`.
     /// This option is incompatible with the `flatten`, `choice`, `attribute` and `rename` options.
     value: bool,
+    /// The version since this field was added.
+    /// Right now this is not used.
+    #[allow(unused)]
+    since: String,
 }
 
 impl Attributes {
@@ -59,6 +63,7 @@ impl Attributes {
         let mut flatten = false;
         let mut choice = false;
         let mut value = false;
+        let mut since = String::new();
 
         for meta in metas {
             match &meta {
@@ -91,6 +96,13 @@ impl Attributes {
                             syn::NestedMeta::Meta(syn::Meta::Path(p)) if p.is_ident("value") => {
                                 value = true;
                             }
+                            syn::NestedMeta::Meta(syn::Meta::NameValue(nv))
+                                if nv.path.is_ident("since") =>
+                            {
+                                if let syn::Lit::Str(s) = &nv.lit {
+                                    since = s.value();
+                                }
+                            }
                             _ => {
                                 return Err(syn::Error::new_spanned(
                                     n,
@@ -111,6 +123,7 @@ impl Attributes {
             flatten,
             choice,
             value,
+            since,
         })
     }
 
@@ -146,35 +159,25 @@ impl Attributes {
             });
         }
 
-        if self.flatten {
+        if self.flatten || (format == Format::Xml && self.choice) {
             if self.choice && format == Format::Xml {
                 field.attrs.push(syn::parse_quote! {
                     #[serde(rename="$value")]
                 });
             } else {
+                eprintln!(
+                    "Pushing flatten for field: {}",
+                    field
+                        .ident
+                        .as_ref()
+                        .map(|i| i.to_string())
+                        .unwrap_or_default()
+                );
                 field.attrs.push(syn::parse_quote! {
-                    #[serde(flatten)]
+                   #[serde(flatten)]
                 });
             }
         }
-
-        // if self.attribute && format == Format::Xml {
-        //     if type_is_option(&field.ty) {
-        //         field.attrs.push(syn::parse_quote! {
-        //             #[serde(deserialize_with = "crate::helper::macro_helper_deserialize_attr_opt")]
-        //         });
-        //     } else {
-        //         field.attrs.push(syn::parse_quote! {
-        //             #[serde(deserialize_with = "crate::helper::macro_helper_deserialize_attr")]
-        //         });
-        //     }
-        // }
-
-        // if format == Format::Xml {
-        //     field.attrs.push(syn::parse_quote! {
-        //         #[serde(deserialize_with = "crate::helper::xml_de_proxy")]
-        //     });
-        // }
 
         if self.value {
             if self.flatten || self.choice || self.attribute || self.rename.is_some() {
@@ -196,16 +199,6 @@ impl Attributes {
         }
 
         Ok(())
-    }
-}
-
-fn type_is_option(ty: &syn::Type) -> bool {
-    match ty {
-        syn::Type::Path(syn::TypePath {
-            path: syn::Path { segments, .. },
-            ..
-        }) if segments.first().map(|s| s.ident == "").unwrap_or(false) => true,
-        _ => false,
     }
 }
 
@@ -247,6 +240,14 @@ fn serde_wrapper(format: Format) -> syn::Path {
     syn::parse_quote!(crate::#ident)
 }
 
+fn enum_insert_untagged(input: &mut syn::DeriveInput) {
+    if std::matches!(input.data, syn::Data::Enum(_)) {
+        input.attrs.push(syn::parse_quote! {
+            #[serde(untagged)]
+        });
+    }
+}
+
 struct SerializeOutput {
     patched_input: syn::DeriveInput,
     from_impl: proc_macro2::TokenStream,
@@ -282,6 +283,7 @@ impl<'a> SerializeBuilder<'a> {
 
         self.patch_ident(&mut patched);
         self.append_derive_serialize(&mut patched);
+        enum_insert_untagged(&mut patched);
         self.append_se_lifetime(&mut patched);
         self.patch_field_types(&mut patched);
         self.append_phatom_field(&mut patched);
@@ -454,6 +456,7 @@ impl<'a> DeserializeBuilder<'a> {
 
         self.patch_ident(&mut patched);
         self.append_derive_deserialize(&mut patched);
+        enum_insert_untagged(&mut patched);
         self.patch_field_types(&mut patched);
         input_apply_field_attributes(self.format, &mut patched)?;
 
@@ -591,10 +594,6 @@ pub fn expand(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
             #se_xml_impl
             #de_xml_patched
             #de_xml_impl
-
-            impl crate::SubsonicVersioned for #input_ident {
-                const SINCE: crate::common::Version = crate::common::Version::LATEST;
-            }
 
             impl crate::SubsonicSerialize for #input_ident {
                 fn serialize<S>(
