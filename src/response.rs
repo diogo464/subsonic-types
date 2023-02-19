@@ -47,6 +47,22 @@ impl Response {
             body: Some(ResponseBody::Error(error)),
         }
     }
+
+    pub fn to_json(&self) -> Result<String, crate::SerdeError> {
+        crate::to_json(self)
+    }
+
+    pub fn from_json(content: &str) -> Result<Self, crate::SerdeError> {
+        crate::from_json(content)
+    }
+
+    pub fn to_xml(&self) -> Result<String, crate::SerdeError> {
+        crate::to_xml(self)
+    }
+
+    pub fn from_xml(content: &str) -> Result<Self, crate::SerdeError> {
+        crate::from_xml(content)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]

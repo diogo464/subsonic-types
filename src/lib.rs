@@ -4,14 +4,14 @@ pub(crate) mod helper;
 pub(crate) mod wrapper;
 
 pub(crate) use subsonic_macro::SubsonicType;
-pub use traits::*;
+pub(crate) use traits::*;
+pub(crate) use wrapper::{Json, Xml};
 
 pub mod common;
 pub mod request;
 pub mod response;
 
 use response::Response;
-pub use wrapper::{Json, Xml};
 
 #[derive(Debug)]
 pub struct SerdeError(Box<dyn std::error::Error>);
