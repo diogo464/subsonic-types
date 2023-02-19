@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    common::{AverageRating, DateTime, MediaType, UserRating, Version},
+    common::{AverageRating, DateTime, MediaType, Milliseconds, UserRating, Version},
     SubsonicType,
 };
 
@@ -19,8 +19,8 @@ pub struct Response {
     pub status: ResponseStatus,
     #[subsonic(attribute)]
     pub version: Version,
-    #[subsonic(flatten, complex)]
-    pub body: ResponseBody,
+    #[subsonic(flatten, choice)]
+    pub body: Option<ResponseBody>,
 }
 
 impl Response {
@@ -28,7 +28,15 @@ impl Response {
         Self {
             status: ResponseStatus::Ok,
             version,
-            body,
+            body: Some(body),
+        }
+    }
+
+    pub fn ok_empty(version: Version) -> Self {
+        Self {
+            status: ResponseStatus::Ok,
+            version,
+            body: None,
         }
     }
 
@@ -36,7 +44,7 @@ impl Response {
         Self {
             status: ResponseStatus::Failed,
             version,
-            body: ResponseBody::Error(error),
+            body: Some(ResponseBody::Error(error)),
         }
     }
 }
@@ -48,7 +56,7 @@ pub enum ResponseBody {
     Directory(Directory),
     Genres(Genres),
     Artists(ArtistsID3),
-    Artist(Artist),
+    Artist(ArtistWithAlbumsID3),
     Album(AlbumWithSongsID3),
     Song(Child),
     Videos(Videos),
@@ -95,7 +103,7 @@ pub struct License {
     #[subsonic(attribute, optional)]
     pub email: Option<String>,
     #[subsonic(attribute, optional)]
-    pub licence_expires: Option<DateTime>,
+    pub license_expires: Option<DateTime>,
     #[subsonic(attribute, optional)]
     pub trial_expires: Option<DateTime>,
 }
@@ -115,6 +123,11 @@ pub struct MusicFolder {
 
 #[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Indexes {
+    /// Note: Not sure that this is actually milliseconds
+    #[subsonic(attribute)]
+    pub last_modified: Milliseconds,
+    #[subsonic(attribute)]
+    pub ignored_articles: String,
     pub shortcut: Vec<Artist>,
     pub index: Vec<Index>,
     pub child: Vec<Child>,
@@ -130,7 +143,7 @@ pub struct Index {
 #[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Artist {
     #[subsonic(attribute)]
-    pub id: u32,
+    pub id: String,
     #[subsonic(attribute)]
     pub name: String,
     #[subsonic(attribute, optional)]
@@ -154,6 +167,8 @@ pub struct Genre {
     pub song_count: u32,
     #[subsonic(attribute)]
     pub album_count: u32,
+    #[subsonic(value)]
+    pub name: String,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
@@ -173,7 +188,7 @@ pub struct IndexID3 {
 #[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct ArtistID3 {
     #[subsonic(attribute)]
-    pub id: u32,
+    pub id: String,
     #[subsonic(attribute)]
     pub name: String,
     #[subsonic(attribute, optional)]
@@ -196,7 +211,7 @@ pub struct ArtistWithAlbumsID3 {
 #[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct AlbumID3 {
     #[subsonic(attribute)]
-    pub id: u32,
+    pub id: String,
     #[subsonic(attribute)]
     pub name: String,
     #[subsonic(attribute, optional)]
@@ -770,5 +785,584 @@ impl Error {
             code,
             message: Some(message.into()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn example_ping() {
+        let xml = r#"
+            <subsonic-response status="ok" version="1.1.1"> </subsonic-response>
+        "#;
+
+        let value = crate::from_xml(xml).unwrap();
+        let expected = Response::ok_empty(Version::V1_1_1);
+        assert_eq!(value, expected);
+    }
+
+    #[test]
+    fn example_get_license() {
+        let xml = r#"
+        <subsonic-response status="ok" version="1.13.0">
+            <license valid="true" email="foo@bar.com" licenseExpires="2019-09-03T14:46:43"/>
+        </subsonic-response>
+        "#;
+
+        let value = crate::from_xml(xml).unwrap();
+        let expected = Response::ok(
+            Version::V1_13_0,
+            ResponseBody::License(License {
+                valid: true,
+                email: Some("foo@bar.com".into()),
+                license_expires: Some("2019-09-03T14:46:43".parse().unwrap()),
+                ..Default::default()
+            }),
+        );
+        assert_eq!(value, expected);
+    }
+
+    #[test]
+    fn example_get_music_folders() {
+        let xml = r#"
+        <subsonic-response status="ok" version="1.1.1">
+            <musicFolders>
+            <musicFolder id="1" name="Music"/>
+            <musicFolder id="2" name="Movies"/>
+            <musicFolder id="3" name="Incoming"/>
+            </musicFolders>
+        </subsonic-response>
+        "#;
+
+        let value = crate::from_xml(xml).unwrap();
+        let expected = Response::ok(
+            Version::V1_1_1,
+            ResponseBody::MusicFolders(MusicFolders {
+                music_folder: vec![
+                    MusicFolder {
+                        id: 1,
+                        name: Some("Music".into()),
+                    },
+                    MusicFolder {
+                        id: 2,
+                        name: Some("Movies".into()),
+                    },
+                    MusicFolder {
+                        id: 3,
+                        name: Some("Incoming".into()),
+                    },
+                ],
+            }),
+        );
+        assert_eq!(value, expected);
+    }
+
+    #[test]
+    fn example_get_indexes() {
+        let xml = r#"
+        <subsonic-response status="ok" version="1.10.1">
+            <indexes lastModified="237462836472342" ignoredArticles="The El La Los Las Le Les">
+                <shortcut id="11" name="Audio books"/>
+                <shortcut id="10" name="Podcasts"/>
+                <index name="A">
+                    <artist id="1" name="ABBA"/>
+                    <artist id="2" name="Alanis Morisette"/>
+                    <artist id="3" name="Alphaville" starred="2013-11-02T12:30:00"/>
+                </index>
+                <index name="B">
+                    <artist name="Bob Dylan" id="4"/>
+                </index>
+                <child id="111" parent="11" title="Dancing Queen" isDir="false" album="Arrival" artist="ABBA" track="7" year="1978" genre="Pop" coverArt="24" size="8421341" contentType="audio/mpeg" suffix="mp3" duration="146" bitRate="128" path="ABBA/Arrival/Dancing Queen.mp3"/>
+                <child id="112" parent="11" title="Money, Money, Money" isDir="false" album="Arrival" artist="ABBA" track="7" year="1978" genre="Pop" coverArt="25" size="4910028" contentType="audio/flac" suffix="flac" transcodedContentType="audio/mpeg" transcodedSuffix="mp3" duration="208" bitRate="128" path="ABBA/Arrival/Money, Money, Money.mp3"/>
+            </indexes>
+        </subsonic-response>
+        "#;
+
+        let value = crate::from_xml(xml).unwrap();
+        let expected = Response::ok(
+            Version::new(1, 10, 1),
+            ResponseBody::Indexes(Indexes {
+                shortcut: vec![
+                    Artist {
+                        id: "11".into(),
+                        name: "Audio books".into(),
+                        ..Default::default()
+                    },
+                    Artist {
+                        id: "10".into(),
+                        name: "Podcasts".into(),
+                        ..Default::default()
+                    },
+                ],
+                index: vec![
+                    Index {
+                        name: "A".into(),
+                        artist: vec![
+                            Artist {
+                                id: "1".into(),
+                                name: "ABBA".into(),
+                                ..Default::default()
+                            },
+                            Artist {
+                                id: "2".into(),
+                                name: "Alanis Morisette".into(),
+                                ..Default::default()
+                            },
+                            Artist {
+                                id: "3".into(),
+                                name: "Alphaville".into(),
+                                starred: Some("2013-11-02T12:30:00".parse().unwrap()),
+                                ..Default::default()
+                            },
+                        ],
+                    },
+                    Index {
+                        name: "B".into(),
+                        artist: vec![Artist {
+                            id: "4".into(),
+                            name: "Bob Dylan".into(),
+                            ..Default::default()
+                        }],
+                    },
+                ],
+                child: vec![
+                    Child {
+                        id: "111".into(),
+                        parent: Some("11".into()),
+                        title: "Dancing Queen".into(),
+                        is_dir: false,
+                        album: Some("Arrival".into()),
+                        artist: Some("ABBA".into()),
+                        track: Some(7),
+                        year: Some(1978),
+                        genre: Some("Pop".into()),
+                        cover_art: Some("24".into()),
+                        size: Some(8421341),
+                        content_type: Some("audio/mpeg".into()),
+                        suffix: Some("mp3".into()),
+                        duration: Some(146),
+                        bit_rate: Some(128),
+                        path: Some("ABBA/Arrival/Dancing Queen.mp3".into()),
+                        ..Default::default()
+                    },
+                    Child {
+                        id: "112".into(),
+                        parent: Some("11".into()),
+                        title: "Money, Money, Money".into(),
+                        is_dir: false,
+                        album: Some("Arrival".into()),
+                        artist: Some("ABBA".into()),
+                        track: Some(7),
+                        year: Some(1978),
+                        genre: Some("Pop".into()),
+                        cover_art: Some("25".into()),
+                        size: Some(4910028),
+                        content_type: Some("audio/flac".into()),
+                        suffix: Some("flac".into()),
+                        transcoded_content_type: Some("audio/mpeg".into()),
+                        transcoded_suffix: Some("mp3".into()),
+                        duration: Some(208),
+                        bit_rate: Some(128),
+                        path: Some("ABBA/Arrival/Money, Money, Money.mp3".into()),
+                        ..Default::default()
+                    },
+                ],
+                last_modified: Milliseconds::new(237462836472342),
+                ignored_articles: "The El La Los Las Le Les".into(),
+            }),
+        );
+        assert_eq!(value, expected);
+    }
+
+    #[test]
+    fn exmple_get_music_directory_1() {
+        let xml = r#"
+        <subsonic-response status="ok" version="1.10.1">
+            <directory id="10" parent="9" name="ABBA" starred="2013-11-02T12:30:00">
+                <child id="11" parent="10" title="Arrival" artist="ABBA" isDir="true" coverArt="22"/>
+                <child id="12" parent="10" title="Super Trouper" artist="ABBA" isDir="true" coverArt="23"/>
+            </directory>
+        </subsonic-response>
+        "#;
+
+        let value = crate::from_xml(xml).unwrap();
+        let expected = Response::ok(
+            Version::new(1, 10, 1),
+            ResponseBody::Directory(Directory {
+                id: "10".into(),
+                parent: Some("9".into()),
+                name: "ABBA".into(),
+                starred: Some("2013-11-02T12:30:00".parse().unwrap()),
+                child: vec![
+                    Child {
+                        id: "11".into(),
+                        parent: Some("10".into()),
+                        title: "Arrival".into(),
+                        artist: Some("ABBA".into()),
+                        is_dir: true,
+                        cover_art: Some("22".into()),
+                        ..Default::default()
+                    },
+                    Child {
+                        id: "12".into(),
+                        parent: Some("10".into()),
+                        title: "Super Trouper".into(),
+                        artist: Some("ABBA".into()),
+                        is_dir: true,
+                        cover_art: Some("23".into()),
+                        ..Default::default()
+                    },
+                ],
+                ..Default::default()
+            }),
+        );
+        assert_eq!(value, expected);
+    }
+
+    #[test]
+    fn example_get_music_directory_2() {
+        let xml = r#"
+        <subsonic-response status="ok" version="1.4.0">
+            <directory id="11" parent="1" name="Arrival">
+                <child id="111" parent="11" title="Dancing Queen" isDir="false" album="Arrival" artist="ABBA" track="7" year="1978" genre="Pop" coverArt="24" size="8421341" contentType="audio/mpeg" suffix="mp3" duration="146" bitRate="128" path="ABBA/Arrival/Dancing Queen.mp3"/>
+                <child id="112" parent="11" title="Money, Money, Money" isDir="false" album="Arrival" artist="ABBA" track="7" year="1978" genre="Pop" coverArt="25" size="4910028" contentType="audio/flac" suffix="flac" transcodedContentType="audio/mpeg" transcodedSuffix="mp3" duration="208" bitRate="128" path="ABBA/Arrival/Money, Money, Money.mp3"/>
+            </directory>
+        </subsonic-response>
+        "#;
+
+        let value = crate::from_xml(xml).unwrap();
+        let expected = Response::ok(
+            Version::new(1, 4, 0),
+            ResponseBody::Directory(Directory {
+                id: "11".into(),
+                parent: Some("1".into()),
+                name: "Arrival".into(),
+                child: vec![
+                    Child {
+                        id: "111".into(),
+                        parent: Some("11".into()),
+                        title: "Dancing Queen".into(),
+                        is_dir: false,
+                        album: Some("Arrival".into()),
+                        artist: Some("ABBA".into()),
+                        track: Some(7),
+                        year: Some(1978),
+                        genre: Some("Pop".into()),
+                        cover_art: Some("24".into()),
+                        size: Some(8421341),
+                        content_type: Some("audio/mpeg".into()),
+                        suffix: Some("mp3".into()),
+                        duration: Some(146),
+                        bit_rate: Some(128),
+                        path: Some("ABBA/Arrival/Dancing Queen.mp3".into()),
+                        ..Default::default()
+                    },
+                    Child {
+                        id: "112".into(),
+                        parent: Some("11".into()),
+                        title: "Money, Money, Money".into(),
+                        is_dir: false,
+                        album: Some("Arrival".into()),
+                        artist: Some("ABBA".into()),
+                        track: Some(7),
+                        year: Some(1978),
+                        genre: Some("Pop".into()),
+                        cover_art: Some("25".into()),
+                        size: Some(4910028),
+                        content_type: Some("audio/flac".into()),
+                        suffix: Some("flac".into()),
+                        transcoded_content_type: Some("audio/mpeg".into()),
+                        transcoded_suffix: Some("mp3".into()),
+                        duration: Some(208),
+                        bit_rate: Some(128),
+                        path: Some("ABBA/Arrival/Money, Money, Money.mp3".into()),
+                        ..Default::default()
+                    },
+                ],
+                ..Default::default()
+            }),
+        );
+        assert_eq!(value, expected);
+    }
+
+    #[test]
+    fn example_get_genres() {
+        // The original example is here: http://www.subsonic.org/pages/inc/api/examples/genres_example_1.xml
+        // I had to add the &amp; instead of just using & because it looks like that isn't valid.
+        // https://stackoverflow.com/questions/12524908/how-can-i-escape-in-xml
+
+        let xml = r#"
+            <subsonic-response status="ok" version="1.10.2">
+                <genres>
+                    <genre songCount="28" albumCount="6">Electronic</genre>
+                    <genre songCount="6" albumCount="2">Hard Rock</genre>
+                    <genre songCount="8" albumCount="2">R&amp;B</genre>
+                    <genre songCount="22" albumCount="2">Blues</genre>
+                    <genre songCount="2" albumCount="2">Podcast</genre>
+                    <genre songCount="11" albumCount="1">Brit Pop</genre>
+                    <genre songCount="14" albumCount="1">Live</genre>
+                </genres>
+            </subsonic-response>
+            "#;
+
+        let value = crate::from_xml(xml).unwrap();
+        let expected = Response::ok(
+            Version::new(1, 10, 2),
+            ResponseBody::Genres(Genres {
+                genre: vec![
+                    Genre {
+                        name: "Electronic".into(),
+                        song_count: 28,
+                        album_count: 6,
+                    },
+                    Genre {
+                        name: "Hard Rock".into(),
+                        song_count: 6,
+                        album_count: 2,
+                    },
+                    Genre {
+                        name: "R&B".into(),
+                        song_count: 8,
+                        album_count: 2,
+                    },
+                    Genre {
+                        name: "Blues".into(),
+                        song_count: 22,
+                        album_count: 2,
+                    },
+                    Genre {
+                        name: "Podcast".into(),
+                        song_count: 2,
+                        album_count: 2,
+                    },
+                    Genre {
+                        name: "Brit Pop".into(),
+                        song_count: 11,
+                        album_count: 1,
+                    },
+                    Genre {
+                        name: "Live".into(),
+                        song_count: 14,
+                        album_count: 1,
+                    },
+                ],
+            }),
+        );
+        assert_eq!(value, expected);
+    }
+
+    #[test]
+    fn example_get_artists() {
+        let xml = r#"
+        <subsonic-response status="ok" version="1.10.1">
+            <artists ignoredArticles="The El La Los Las Le Les">
+                <index name="A">
+                    <artist id="5449" name="A-Ha" coverArt="ar-5449" albumCount="4"/>
+                    <artist id="5421" name="ABBA" coverArt="ar-5421" albumCount="6"/>
+                    <artist id="5432" name="AC/DC" coverArt="ar-5432" albumCount="15"/>
+                    <artist id="6633" name="Aaron Neville" coverArt="ar-6633" albumCount="1"/>
+                </index>
+                <index name="B">
+                    <artist id="5950" name="Bob Marley" coverArt="ar-5950" albumCount="8"/>
+                    <artist id="5957" name="Bruce Dickinson" coverArt="ar-5957" albumCount="2"/>
+                </index>
+            </artists>
+        </subsonic-response>
+        "#;
+
+        let value = crate::from_xml(xml).unwrap();
+        let expected = Response::ok(
+            Version::new(1, 10, 1),
+            ResponseBody::Artists(ArtistsID3 {
+                ignored_articles: "The El La Los Las Le Les".into(),
+                index: vec![
+                    IndexID3 {
+                        name: "A".into(),
+                        artist: vec![
+                            ArtistID3 {
+                                id: "5449".into(),
+                                name: "A-Ha".into(),
+                                cover_art: Some("ar-5449".into()),
+                                album_count: 4,
+                                ..Default::default()
+                            },
+                            ArtistID3 {
+                                id: "5421".into(),
+                                name: "ABBA".into(),
+                                cover_art: Some("ar-5421".into()),
+                                album_count: 6,
+                                ..Default::default()
+                            },
+                            ArtistID3 {
+                                id: "5432".into(),
+                                name: "AC/DC".into(),
+                                cover_art: Some("ar-5432".into()),
+                                album_count: 15,
+                                ..Default::default()
+                            },
+                            ArtistID3 {
+                                id: "6633".into(),
+                                name: "Aaron Neville".into(),
+                                cover_art: Some("ar-6633".into()),
+                                album_count: 1,
+                                ..Default::default()
+                            },
+                        ],
+                    },
+                    IndexID3 {
+                        name: "B".into(),
+                        artist: vec![
+                            ArtistID3 {
+                                id: "5950".into(),
+                                name: "Bob Marley".into(),
+                                cover_art: Some("ar-5950".into()),
+                                album_count: 8,
+                                ..Default::default()
+                            },
+                            ArtistID3 {
+                                id: "5957".into(),
+                                name: "Bruce Dickinson".into(),
+                                cover_art: Some("ar-5957".into()),
+                                album_count: 2,
+                                ..Default::default()
+                            },
+                        ],
+                    },
+                ],
+            }),
+        );
+        assert_eq!(value, expected);
+    }
+
+    #[test]
+    fn example_get_artist() {
+        let xml = r#"
+        <subsonic-response status="ok" version="1.8.0">
+            <artist id="5432" name="AC/DC" coverArt="ar-5432" albumCount="15">
+                <album id="11047" name="Back In Black" coverArt="al-11047" songCount="10" created="2004-11-08T23:33:11" duration="2534" artist="AC/DC" artistId="5432"/>
+                <album id="11048" name="Black Ice" coverArt="al-11048" songCount="15" created="2008-10-30T09:20:52" duration="3332" artist="AC/DC" artistId="5432"/>
+                <album id="11049" name="Blow up your Video" coverArt="al-11049" songCount="10" created="2004-11-27T19:22:45" duration="2578" artist="AC/DC" artistId="5432"/>
+                <album id="11050" name="Flick Of The Switch" coverArt="al-11050" songCount="10" created="2004-11-27T19:22:51" duration="2222" artist="AC/DC" artistId="5432"/>
+                <album id="11051" name="Fly On The Wall" coverArt="al-11051" songCount="10" created="2004-11-27T19:22:57" duration="2405" artist="AC/DC" artistId="5432"/>
+                <album id="11052" name="For Those About To Rock" coverArt="al-11052" songCount="10" created="2004-11-08T23:35:02" duration="2403" artist="AC/DC" artistId="5432"/>
+                <album id="11053" name="High Voltage" coverArt="al-11053" songCount="8" created="2004-11-27T20:23:32" duration="2414" artist="AC/DC" artistId="5432"/>
+                <album id="10489" name="Highway To Hell" coverArt="al-10489" songCount="12" created="2009-06-15T09:41:54" duration="2745" artist="AC/DC" artistId="5432"/>
+                <album id="11054" name="If You Want Blood..." coverArt="al-11054" songCount="1" created="2004-11-27T20:23:32" duration="304" artist="AC/DC" artistId="5432"/>
+            </artist>
+        </subsonic-response>
+        "#;
+
+        let expected = Response::ok(
+            Version::new(1, 8, 0),
+            ResponseBody::Artist(ArtistWithAlbumsID3 {
+                artist: ArtistID3 {
+                    id: "5432".into(),
+                    name: "AC/DC".into(),
+                    cover_art: Some("ar-5432".into()),
+                    album_count: 15,
+                    ..Default::default()
+                },
+                album: vec![
+                    AlbumID3 {
+                        id: "11047".into(),
+                        name: "Back In Black".into(),
+                        cover_art: Some("al-11047".into()),
+                        song_count: 10,
+                        created: Some("2004-11-08T23:33:11".parse().unwrap()),
+                        duration: 2534,
+                        artist: Some("AC/DC".into()),
+                        artist_id: Some("5432".into()),
+                        ..Default::default()
+                    },
+                    AlbumID3 {
+                        id: "11048".into(),
+                        name: "Black Ice".into(),
+                        cover_art: Some("al-11048".into()),
+                        song_count: 15,
+                        created: Some("2008-10-30T09:20:52".parse().unwrap()),
+                        duration: 3332,
+                        artist: Some("AC/DC".into()),
+                        artist_id: Some("5432".into()),
+                        ..Default::default()
+                    },
+                    // <album id="11050" name="Flick Of The Switch" coverArt="al-11050" songCount="10" created="2004-11-27T19:22:51" duration="2222" artist="AC/DC" artistId="5432"/>
+                    AlbumID3 {
+                        id: "11050".into(),
+                        name: "Flick Of The Switch".into(),
+                        cover_art: Some("al-11050".into()),
+                        song_count: 10,
+                        created: Some("2004-11-27T19:22:51".parse().unwrap()),
+                        duration: 2222,
+                        artist: Some("AC/DC".into()),
+                        artist_id: Some("5432".into()),
+                        ..Default::default()
+                    },
+                    // <album id="11051" name="Fly On The Wall" coverArt="al-11051" songCount="10" created="2004-11-27T19:22:57" duration="2405" artist="AC/DC" artistId="5432"/>
+                    AlbumID3 {
+                        id: "11051".into(),
+                        name: "Fly On The Wall".into(),
+                        cover_art: Some("al-11051".into()),
+                        song_count: 10,
+                        created: Some("2004-11-27T19:22:57".parse().unwrap()),
+                        duration: 2405,
+                        artist: Some("AC/DC".into()),
+                        artist_id: Some("5432".into()),
+                        ..Default::default()
+                    },
+                    // <album id="11052" name="For Those About To Rock" coverArt="al-11052" songCount="10" created="2004-11-08T23:35:02" duration="2403" artist="AC/DC" artistId="5432"/>
+                    AlbumID3 {
+                        id: "11052".into(),
+                        name: "For Those About To Rock".into(),
+                        cover_art: Some("al-11052".into()),
+                        song_count: 10,
+                        created: Some("2004-11-08T23:35:02".parse().unwrap()),
+                        duration: 2403,
+                        artist: Some("AC/DC".into()),
+                        artist_id: Some("5432".into()),
+                        ..Default::default()
+                    },
+                    // <album id="11053" name="High Voltage" coverArt="al-11053" songCount="8" created="2004-11-27T20:23:32" duration="2414" artist="AC/DC" artistId="5432"/>
+                    AlbumID3 {
+                        id: "11053".into(),
+                        name: "High Voltage".into(),
+                        cover_art: Some("al-11053".into()),
+                        song_count: 8,
+                        created: Some("2004-11-27T20:23:32".parse().unwrap()),
+                        duration: 2414,
+                        artist: Some("AC/DC".into()),
+                        artist_id: Some("5432".into()),
+                        ..Default::default()
+                    },
+                    // <album id="10489" name="Highway To Hell" coverArt="al-10489" songCount="12" created="2009-06-15T09:41:54" duration="2745" artist="AC/DC" artistId="5432"/>
+                    AlbumID3 {
+                        id: "10489".into(),
+                        name: "Highway To Hell".into(),
+                        cover_art: Some("al-10489".into()),
+                        song_count: 12,
+                        created: Some("2009-06-15T09:41:54".parse().unwrap()),
+                        duration: 2745,
+                        artist: Some("AC/DC".into()),
+                        artist_id: Some("5432".into()),
+                        ..Default::default()
+                    },
+                    // <album id="11054" name="If You Want Blood..." coverArt="al-11054" songCount="1" created="2004-11-27T20:23:32" duration="304" artist="AC/DC" artistId="5432"/>
+                    AlbumID3 {
+                        id: "11054".into(),
+                        name: "If You Want Blood...".into(),
+                        cover_art: Some("al-11054".into()),
+                        song_count: 1,
+                        created: Some("2004-11-27T20:23:32".parse().unwrap()),
+                        duration: 304,
+                        artist: Some("AC/DC".into()),
+                        artist_id: Some("5432".into()),
+                        ..Default::default()
+                    },
+                ],
+            }),
+        );
+        eprintln!("{}", crate::to_xml(&expected).unwrap());
+        let value = crate::from_xml(xml).unwrap();
     }
 }

@@ -1,5 +1,6 @@
 #[macro_use]
 pub(crate) mod macros;
+pub(crate) mod helper;
 
 pub mod common;
 pub mod request;
@@ -188,6 +189,7 @@ pub fn to_json(response: &Response) -> Result<String, SerdeError> {
     use serde::Serialize;
     #[derive(Debug, Clone, PartialEq, Serialize)]
     struct SubsonicResponse<'a> {
+        #[serde(rename = "subsonic-response")]
         pub subsonic_response: Json<&'a Response>,
     }
     let wrapper = Json::new(response);
@@ -246,10 +248,481 @@ pub fn to_xml(response: &Response) -> Result<String, SerdeError> {
 /// ```
 pub fn from_json(json: &str) -> Result<Response, SerdeError> {
     use serde::Deserialize;
+
+    /// XML attributes are deserialized as a map of key-value pairs.
+    /// All values are strings but some structs require integers or floats.
+    ///
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum ValueConversion {
+        String,
+        Integer,
+        Float,
+    }
+
+    struct MapKeyDeserializeSeed<'de, S> {
+        seed: S,
+        _phantom: std::marker::PhantomData<&'de ()>,
+    }
+
+    impl<'de, S> MapKeyDeserializeSeed<'de, S> {
+        fn new(seed: S) -> Self {
+            Self {
+                seed,
+                _phantom: std::marker::PhantomData,
+            }
+        }
+    }
+
+    impl<'de, S> serde::de::DeserializeSeed<'de> for MapKeyDeserializeSeed<'de, S>
+    where
+        S: serde::de::DeserializeSeed<'de>,
+    {
+        type Value = S::Value;
+
+        fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            self.seed.deserialize(deserializer)
+        }
+    }
+
+    struct MapAccess<'de, A> {
+        map: A,
+        _phantom: std::marker::PhantomData<&'de ()>,
+    }
+
+    impl<'de, A> MapAccess<'de, A> {
+        fn new(map: A) -> Self {
+            Self {
+                map,
+                _phantom: std::marker::PhantomData,
+            }
+        }
+    }
+
+    impl<'de, A> serde::de::MapAccess<'de> for MapAccess<'de, A>
+    where
+        A: serde::de::MapAccess<'de>,
+    {
+        type Error = A::Error;
+
+        fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
+        where
+            K: serde::de::DeserializeSeed<'de>,
+        {
+            match self.map.next_key_seed(seed)? {
+                Some(key) => todo!(),
+                None => todo!(),
+            }
+        }
+
+        fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::DeserializeSeed<'de>,
+        {
+            todo!()
+        }
+    }
+
+    struct MapVisitor<'de, V> {
+        visitor: V,
+        _phantom: std::marker::PhantomData<&'de ()>,
+    }
+
+    impl<'de, V> MapVisitor<'de, V> {
+        fn new(visitor: V) -> Self {
+            Self {
+                visitor,
+                _phantom: std::marker::PhantomData,
+            }
+        }
+    }
+
+    impl<'de, V> serde::de::Visitor<'de> for MapVisitor<'de, V>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        type Value = V::Value;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            self.visitor.expecting(formatter)
+        }
+
+        fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+        where
+            A: serde::de::MapAccess<'de>,
+        {
+            let map = MapAccess::new(map);
+            self.visitor.visit_map(map)
+        }
+    }
+
+    struct RelaxedDeserializer<'de, D> {
+        pub deserializer: D,
+        pub _phantom: std::marker::PhantomData<&'de ()>,
+    }
+
+    impl<'de, D> serde::Deserializer<'de> for RelaxedDeserializer<'de, D>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        type Error = D::Error;
+
+        fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserializer.deserialize_any(visitor)
+        }
+
+        fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            struct BoolVisitor;
+
+            impl<'de> serde::de::Visitor<'de> for BoolVisitor {
+                type Value = bool;
+
+                fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    formatter.write_str("a boolean")
+                }
+
+                fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
+                where
+                    E: serde::de::Error,
+                {
+                    Ok(value)
+                }
+
+                fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+                where
+                    E: serde::de::Error,
+                {
+                    Ok(value != 0)
+                }
+
+                fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+                where
+                    E: serde::de::Error,
+                {
+                    Ok(value != 0)
+                }
+
+                fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+                where
+                    E: serde::de::Error,
+                {
+                    match value {
+                        "true" | "1" => Ok(true),
+                        "false" | "0" => Ok(false),
+                        _ => Err(E::invalid_value(
+                            serde::de::Unexpected::Str(value),
+                            &"a boolean",
+                        )),
+                    }
+                }
+            }
+
+            visitor.visit_bool(self.deserializer.deserialize_any(BoolVisitor)?)
+        }
+
+        fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserialize_i64(visitor)
+        }
+
+        fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserialize_i64(visitor)
+        }
+
+        fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserialize_i64(visitor)
+        }
+
+        fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            todo!()
+        }
+
+        fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserialize_u64(visitor)
+        }
+
+        fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserialize_u64(visitor)
+        }
+
+        fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserialize_u64(visitor)
+        }
+
+        fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            struct U64Visitor;
+
+            impl<'de> serde::de::Visitor<'de> for U64Visitor {
+                type Value = u64;
+
+                fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    formatter.write_str("a u64")
+                }
+
+                fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+                where
+                    E: serde::de::Error,
+                {
+                    Ok(value)
+                }
+
+                fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+                where
+                    E: serde::de::Error,
+                {
+                    match value.parse() {
+                        Ok(value) => Ok(value),
+                        Err(_) => Err(E::invalid_value(
+                            serde::de::Unexpected::Str(value),
+                            &"a u64",
+                        )),
+                    }
+                }
+            }
+
+            visitor.visit_u64(self.deserializer.deserialize_any(U64Visitor)?)
+        }
+
+        fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserialize_f64(visitor)
+        }
+
+        fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            struct F64Visitor;
+
+            impl<'de> serde::de::Visitor<'de> for F64Visitor {
+                type Value = f64;
+
+                fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                    formatter.write_str("a f64")
+                }
+
+                fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
+                where
+                    E: serde::de::Error,
+                {
+                    Ok(value)
+                }
+
+                fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+                where
+                    E: serde::de::Error,
+                {
+                    match value.parse() {
+                        Ok(value) => Ok(value),
+                        Err(_) => Err(E::invalid_value(
+                            serde::de::Unexpected::Str(value),
+                            &"a f64",
+                        )),
+                    }
+                }
+            }
+
+            visitor.visit_f64(self.deserializer.deserialize_any(F64Visitor)?)
+        }
+
+        fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserializer.deserialize_char(visitor)
+        }
+
+        fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserializer.deserialize_str(visitor)
+        }
+
+        fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserializer.deserialize_any(visitor)
+        }
+
+        fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserializer.deserialize_bytes(visitor)
+        }
+
+        fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserializer.deserialize_byte_buf(visitor)
+        }
+
+        fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserializer.deserialize_option(visitor)
+        }
+
+        fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserializer.deserialize_unit(visitor)
+        }
+
+        fn deserialize_unit_struct<V>(
+            self,
+            _name: &'static str,
+            visitor: V,
+        ) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserialize_map(visitor)
+        }
+
+        fn deserialize_newtype_struct<V>(
+            self,
+            _name: &'static str,
+            visitor: V,
+        ) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserialize_map(visitor)
+        }
+
+        fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            todo!()
+        }
+
+        fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserialize_seq(visitor)
+        }
+
+        fn deserialize_tuple_struct<V>(
+            self,
+            _name: &'static str,
+            _len: usize,
+            visitor: V,
+        ) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserialize_seq(visitor)
+        }
+
+        fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserializer.deserialize_map(MapVisitor::new(visitor))
+        }
+
+        fn deserialize_struct<V>(
+            self,
+            _name: &'static str,
+            _fields: &'static [&'static str],
+            visitor: V,
+        ) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserialize_map(visitor)
+        }
+
+        fn deserialize_enum<V>(
+            self,
+            _name: &'static str,
+            _variants: &'static [&'static str],
+            _visitor: V,
+        ) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            unimplemented!("you need to implement this")
+        }
+
+        fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserializer.deserialize_identifier(visitor)
+        }
+
+        fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde::de::Visitor<'de>,
+        {
+            self.deserializer.deserialize_ignored_any(visitor)
+        }
+    }
+
     #[derive(Debug, Clone, PartialEq, Deserialize)]
     struct SubsonicResponse {
+        #[serde(rename = "subsonic-response")]
         pub subsonic_response: Json<Response>,
     }
+
+    #[derive(Debug)]
+    struct RelaxedDeserializerWrapper(SubsonicResponse);
+    impl<'de> Deserialize<'de> for RelaxedDeserializerWrapper {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            let relaxed = RelaxedDeserializer {
+                deserializer,
+                _phantom: std::marker::PhantomData,
+            };
+            let value = SubsonicResponse::deserialize(relaxed)?;
+            Ok(Self(value))
+        }
+    }
+
     let response: SubsonicResponse = serde_json::from_str(json)?;
     Ok(response.subsonic_response.into_inner())
 }
@@ -277,13 +750,4 @@ pub fn from_json(json: &str) -> Result<Response, SerdeError> {
 pub fn from_xml(xml: &str) -> Result<Response, SerdeError> {
     let response: Xml<Response> = quick_xml::de::from_str(xml)?;
     Ok(response.into_inner())
-}
-
-#[allow(unused)]
-fn macro_helper_is_none<'a, T, U>(v: T) -> bool
-where
-    T: AsRef<&'a Option<U>>,
-    U: 'a,
-{
-    v.as_ref().is_none()
 }

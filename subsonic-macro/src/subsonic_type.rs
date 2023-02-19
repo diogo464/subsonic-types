@@ -7,11 +7,28 @@ enum Format {
 }
 
 struct Attributes {
+    /// The name to use for the field in the serialized format.
+    /// Translates to `#[serde(rename = "...")]`.
     rename: Option<String>,
+    /// Is this an xml attribute?
+    /// On the xml side, this translates to `#[serde(rename = "@...")]`.
+    /// On the json side, this is ignored.
     attribute: bool,
+    /// Is this field an Option<> that should be skipped if it is None?
+    /// If it is then this translates to `#[serde(skip_serializing_if = "crate::helper::macro_helper_is_none")]`.
     optional: bool,
+    /// Should the field be flattened
+    /// If it is then this translates to `#[serde(flatten)]`.
     flatten: bool,
-    is_complex: bool,
+    /// Is this a choice type?
+    /// If it is a choice type, and it is faltten then in xml it translates to `#[serde(rename="$value")]`.
+    /// In json it is ignored and only the flatten attribute is used.
+    choice: bool,
+    /// Is this an xml value?
+    /// If it is then this translates to `#[serde(rename="$value")]`.
+    /// In json this translates to `#[serde(rename = "value")]`.
+    /// This option is incompatible with the `flatten`, `choice`, `attribute` and `rename` options.
+    value: bool,
 }
 
 impl Attributes {
@@ -40,7 +57,8 @@ impl Attributes {
         let mut attribute = false;
         let mut optional = false;
         let mut flatten = false;
-        let mut is_complex = false;
+        let mut choice = false;
+        let mut value = false;
 
         for meta in metas {
             match &meta {
@@ -67,8 +85,11 @@ impl Attributes {
                             syn::NestedMeta::Meta(syn::Meta::Path(p)) if p.is_ident("flatten") => {
                                 flatten = true;
                             }
-                            syn::NestedMeta::Meta(syn::Meta::Path(p)) if p.is_ident("complex") => {
-                                is_complex = true;
+                            syn::NestedMeta::Meta(syn::Meta::Path(p)) if p.is_ident("choice") => {
+                                choice = true;
+                            }
+                            syn::NestedMeta::Meta(syn::Meta::Path(p)) if p.is_ident("value") => {
+                                value = true;
                             }
                             _ => {
                                 return Err(syn::Error::new_spanned(
@@ -88,7 +109,8 @@ impl Attributes {
             attribute,
             optional,
             flatten,
-            is_complex,
+            choice,
+            value,
         })
     }
 
@@ -112,7 +134,7 @@ impl Attributes {
             base_name
         };
 
-        if !(self.is_complex && format == Format::Xml) {
+        if !(self.choice && format == Format::Xml) && !self.value {
             field.attrs.push(syn::parse_quote! {
                 #[serde(rename = #field_name)]
             });
@@ -120,12 +142,12 @@ impl Attributes {
 
         if self.optional {
             field.attrs.push(syn::parse_quote! {
-                #[serde(skip_serializing_if = "crate::macro_helper_is_none")]
+                #[serde(skip_serializing_if = "crate::helper::is_none")]
             });
         }
 
         if self.flatten {
-            if self.is_complex && format == Format::Xml {
+            if self.choice && format == Format::Xml {
                 field.attrs.push(syn::parse_quote! {
                     #[serde(rename="$value")]
                 });
@@ -136,7 +158,54 @@ impl Attributes {
             }
         }
 
+        // if self.attribute && format == Format::Xml {
+        //     if type_is_option(&field.ty) {
+        //         field.attrs.push(syn::parse_quote! {
+        //             #[serde(deserialize_with = "crate::helper::macro_helper_deserialize_attr_opt")]
+        //         });
+        //     } else {
+        //         field.attrs.push(syn::parse_quote! {
+        //             #[serde(deserialize_with = "crate::helper::macro_helper_deserialize_attr")]
+        //         });
+        //     }
+        // }
+
+        // if format == Format::Xml {
+        //     field.attrs.push(syn::parse_quote! {
+        //         #[serde(deserialize_with = "crate::helper::xml_de_proxy")]
+        //     });
+        // }
+
+        if self.value {
+            if self.flatten || self.choice || self.attribute || self.rename.is_some() {
+                return Err(syn::Error::new_spanned(
+                    field,
+                    "The value attribute is incompatible with the flatten, choice and attribute attributes",
+                ));
+            }
+
+            if format == Format::Xml {
+                field.attrs.push(syn::parse_quote! {
+                    #[serde(rename="$value")]
+                });
+            } else {
+                field.attrs.push(syn::parse_quote! {
+                    #[serde(rename = "value")]
+                });
+            }
+        }
+
         Ok(())
+    }
+}
+
+fn type_is_option(ty: &syn::Type) -> bool {
+    match ty {
+        syn::Type::Path(syn::TypePath {
+            path: syn::Path { segments, .. },
+            ..
+        }) if segments.first().map(|s| s.ident == "").unwrap_or(false) => true,
+        _ => false,
     }
 }
 

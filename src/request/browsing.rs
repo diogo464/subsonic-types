@@ -40,7 +40,7 @@ pub struct GetGenres;
 pub struct GetArtists {
     /// If specified, only return artists in the music folder with the given ID.
     /// See [`GetMusicFolders`].
-    pub music_folder_id: Option<MusicFolderId>,
+    pub music_folder_id: Option<u32>,
 }
 
 /// Returns details for an artist, including a list of albums.

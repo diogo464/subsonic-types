@@ -1,41 +1,86 @@
 use std::{str::FromStr, time::Duration};
 
 use serde::{Deserialize, Serialize};
+use time::PrimitiveDateTime;
 
 /// A date and time.
 /// Use [`chrono::DateTime`] to convert to and from [`DateTime`].
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DateTime(chrono::DateTime<chrono::FixedOffset>);
+#[derive(Debug, Clone, PartialEq)]
+pub struct DateTime(PrimitiveDateTime);
+//pub struct DateTime(chrono::DateTime<chrono::FixedOffset>);
 impl_subsonic_for_serde!(DateTime);
 
-impl From<chrono::DateTime<chrono::FixedOffset>> for DateTime {
-    fn from(date: chrono::DateTime<chrono::FixedOffset>) -> Self {
-        Self(date)
+impl From<PrimitiveDateTime> for DateTime {
+    fn from(datetime: PrimitiveDateTime) -> Self {
+        Self(datetime)
     }
 }
 
-impl From<DateTime> for chrono::DateTime<chrono::FixedOffset> {
-    fn from(date: DateTime) -> Self {
-        date.0
+impl From<DateTime> for PrimitiveDateTime {
+    fn from(datetime: DateTime) -> Self {
+        datetime.0
     }
 }
 
 impl Default for DateTime {
     fn default() -> Self {
-        use chrono::offset::TimeZone;
-        Self::from(
-            chrono::FixedOffset::east_opt(0)
-                .unwrap()
-                .with_ymd_and_hms(1970, 1, 1, 0, 0, 0)
-                .unwrap(),
+        Self::from(PrimitiveDateTime::new(
+            time::macros::date!(1970 - 01 - 01),
+            time::macros::time!(00:00:00),
+        ))
+    }
+}
+
+impl FromStr for DateTime {
+    type Err = time::error::Parse;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        PrimitiveDateTime::parse(
+            s,
+            time::macros::format_description!("[year]-[month]-[day]T[hour]:[minute]:[second]"),
         )
+        .map(Self::from)
+    }
+}
+
+impl std::fmt::Display for DateTime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let string = self
+            .0
+            .format(time::macros::format_description!(
+                "[year]-[month]-[day]T[hour]:[minute]:[second]"
+            ))
+            .map_err(|_| std::fmt::Error)?;
+        write!(f, "{}", string)
+    }
+}
+
+impl Serialize for DateTime {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for DateTime {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Self::from_str(&s).map_err(serde::de::Error::custom)
     }
 }
 
 /// A duration in milliseconds.
 /// When used to represent an instant in time, it is relative to the Unix epoch.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+)]
 pub struct Milliseconds(u64);
+impl_subsonic_for_serde!(Milliseconds);
 
 impl Milliseconds {
     pub fn new(milliseconds: u64) -> Self {
@@ -110,6 +155,7 @@ impl FromStr for Seconds {
     }
 }
 
+// TODO: maybe remove this
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MusicFolderId(u32);
 
@@ -571,9 +617,9 @@ impl std::error::Error for InvalidVersion {}
 /// An API version.
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Version {
-    pub major: u64,
-    pub minor: u64,
-    pub patch: u64,
+    pub major: u8,
+    pub minor: u8,
+    pub patch: u8,
 }
 impl_subsonic_for_serde!(Version);
 
@@ -597,12 +643,16 @@ impl Version {
     pub const V1_1_1: Self = Self::new(1, 1, 1);
     pub const V1_1_0: Self = Self::new(1, 1, 0);
 
-    pub const fn new(major: u64, minor: u64, patch: u64) -> Self {
+    pub const fn new(major: u8, minor: u8, patch: u8) -> Self {
         Self {
             major,
             minor,
             patch,
         }
+    }
+
+    pub(crate) const fn as_u32(self) -> u32 {
+        (self.major as u32) << 16 | (self.minor as u32) << 8 | self.patch as u32
     }
 }
 
@@ -638,9 +688,9 @@ impl std::str::FromStr for Version {
 
 impl<N1, N2, N3> From<(N1, N2, N3)> for Version
 where
-    N1: Into<u64>,
-    N2: Into<u64>,
-    N3: Into<u64>,
+    N1: Into<u8>,
+    N2: Into<u8>,
+    N3: Into<u8>,
 {
     fn from(value: (N1, N2, N3)) -> Self {
         Self::new(value.0.into(), value.1.into(), value.2.into())
