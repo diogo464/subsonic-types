@@ -65,6 +65,7 @@ impl Response {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub enum ResponseBody {
     MusicFolders(MusicFolders),
@@ -570,21 +571,16 @@ pub struct PodcastEpisode {
     pub publish_date: Option<DateTime>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PodcastStatus {
     New,
     Downloading,
     Completed,
-    Error,
     Skipped,
+    #[default]
+    Error,
 }
 impl_subsonic_for_serde!(PodcastStatus);
-
-impl Default for PodcastStatus {
-    fn default() -> Self {
-        PodcastStatus::Error
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct InternetRadioStations {

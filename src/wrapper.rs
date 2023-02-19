@@ -14,21 +14,6 @@ macro_rules! impl_format_wrapper {
             pub fn into_inner(self) -> T {
                 self.0
             }
-
-            pub fn as_inner(&self) -> &T {
-                &self.0
-            }
-
-            pub fn as_inner_mut(&mut self) -> &mut T {
-                &mut self.0
-            }
-
-            pub fn map<U, F>(self, f: F) -> $t<U>
-            where
-                F: FnOnce(T) -> U,
-            {
-                $t(f(self.0))
-            }
         }
 
         impl<T> AsRef<T> for $t<T> {
@@ -93,21 +78,6 @@ impl<T> Xml<T> {
 
     pub fn into_inner(self) -> T {
         self.0
-    }
-
-    pub fn as_inner(&self) -> &T {
-        &self.0
-    }
-
-    pub fn as_inner_mut(&mut self) -> &mut T {
-        &mut self.0
-    }
-
-    pub fn map<U, F>(self, f: F) -> Xml<U>
-    where
-        F: FnOnce(T) -> U,
-    {
-        Xml(f(self.0))
     }
 }
 

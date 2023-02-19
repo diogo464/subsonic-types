@@ -147,7 +147,7 @@ impl Attributes {
             base_name
         };
 
-        if !(self.choice && format == Format::Xml) && !self.value {
+        if !(self.choice && format == Format::Xml || self.value) {
             field.attrs.push(syn::parse_quote! {
                 #[serde(rename = #field_name)]
             });
@@ -230,14 +230,6 @@ fn serde_wrapper(format: Format) -> syn::Path {
         proc_macro2::Span::call_site(),
     );
     syn::parse_quote!(crate::#ident)
-}
-
-fn enum_insert_untagged(input: &mut syn::DeriveInput) {
-    if std::matches!(input.data, syn::Data::Enum(_)) {
-        input.attrs.push(syn::parse_quote! {
-            #[serde(untagged)]
-        });
-    }
 }
 
 struct SerializeOutput {

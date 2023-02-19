@@ -51,7 +51,7 @@ impl std::fmt::Display for DateTime {
                 "[year]-[month]-[day]T[hour]:[minute]:[second]"
             ))
             .map_err(|_| std::fmt::Error)?;
-        write!(f, "{}", string)
+        write!(f, "{string}")
     }
 }
 
@@ -152,28 +152,6 @@ impl FromStr for Seconds {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self::new(s.parse()?))
-    }
-}
-
-// TODO: maybe remove this
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct MusicFolderId(u32);
-
-impl MusicFolderId {
-    pub fn new(id: u32) -> Self {
-        Self(id)
-    }
-}
-
-impl From<u32> for MusicFolderId {
-    fn from(id: u32) -> Self {
-        Self::new(id)
-    }
-}
-
-impl From<MusicFolderId> for u32 {
-    fn from(id: MusicFolderId) -> Self {
-        id.0
     }
 }
 
@@ -478,7 +456,7 @@ impl_subsonic_for_serde!(UserRating);
 
 impl UserRating {
     pub fn new(value: u32) -> Result<Self, InvalidUserRating> {
-        if value > 5 || value < 1 {
+        if !(1..=5).contains(&value) {
             Err(InvalidUserRating)
         } else {
             Ok(UserRating(value))
@@ -545,7 +523,7 @@ impl_subsonic_for_serde!(AverageRating);
 
 impl AverageRating {
     pub fn new(value: f32) -> Result<Self, InvalidAverageRating> {
-        if value > 5.0 || value < 1.0 {
+        if !(1.0..=5.0).contains(&value) {
             Err(InvalidAverageRating)
         } else {
             Ok(AverageRating(value))

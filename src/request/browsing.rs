@@ -1,4 +1,4 @@
-use crate::common::{Milliseconds, MusicFolderId};
+use crate::common::Milliseconds;
 
 /// Returns all configured top-level music folders. Takes no extra parameters.
 ///
