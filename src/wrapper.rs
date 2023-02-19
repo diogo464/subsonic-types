@@ -1,4 +1,4 @@
-use crate::{Format, SubsonicDeserialize, SubsonicSerialize};
+use crate::{common::Version, Format, SubsonicDeserialize, SubsonicSerialize};
 
 macro_rules! impl_format_wrapper {
     ($t:ident, $f:expr) => {
@@ -41,6 +41,13 @@ macro_rules! impl_format_wrapper {
             fn from(value: T) -> Self {
                 Self(value)
             }
+        }
+
+        impl<T> crate::SubsonicVersioned for $t<T>
+        where
+            T: crate::SubsonicVersioned,
+        {
+            const SINCE: Version = T::SINCE;
         }
 
         impl<T> serde::Serialize for $t<T>

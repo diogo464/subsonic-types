@@ -592,6 +592,10 @@ pub fn expand(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
             #de_xml_patched
             #de_xml_impl
 
+            impl crate::SubsonicVersioned for #input_ident {
+                const SINCE: crate::common::Version = crate::common::Version::LATEST;
+            }
+
             impl crate::SubsonicSerialize for #input_ident {
                 fn serialize<S>(
                     &self,

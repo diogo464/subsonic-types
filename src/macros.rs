@@ -1,5 +1,9 @@
 macro_rules! impl_subsonic_for_serde {
     ($t:path) => {
+        impl crate::SubsonicVersioned for $t {
+            const SINCE: crate::common::Version = crate::common::Version::LATEST;
+        }
+
         impl crate::SubsonicSerialize for $t {
             fn serialize<S>(
                 &self,

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use time::PrimitiveDateTime;
 
 /// A date and time.
-/// Use [`chrono::DateTime`] to convert to and from [`DateTime`].
+/// Use [`time::PrimitiveDateTime`] to convert to and from [`DateTime`].
 #[derive(Debug, Clone, PartialEq)]
 pub struct DateTime(PrimitiveDateTime);
 //pub struct DateTime(chrono::DateTime<chrono::FixedOffset>);
@@ -624,6 +624,7 @@ pub struct Version {
 impl_subsonic_for_serde!(Version);
 
 impl Version {
+    pub const LATEST: Self = Self::V1_16_1;
     pub const V1_16_1: Self = Self::new(1, 16, 1);
     pub const V1_16_0: Self = Self::new(1, 16, 0);
     pub const V1_15_0: Self = Self::new(1, 15, 0);
@@ -648,6 +649,14 @@ impl Version {
             major,
             minor,
             patch,
+        }
+    }
+
+    pub(crate) const fn from_u32(value: u32) -> Self {
+        Self {
+            major: (value >> 16) as u8,
+            minor: (value >> 8) as u8,
+            patch: value as u8,
         }
     }
 
