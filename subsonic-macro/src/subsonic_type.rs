@@ -159,20 +159,12 @@ impl Attributes {
             });
         }
 
-        if self.flatten || (format == Format::Xml && self.choice) {
+        if self.flatten {
             if self.choice && format == Format::Xml {
                 field.attrs.push(syn::parse_quote! {
                     #[serde(rename="$value")]
                 });
             } else {
-                eprintln!(
-                    "Pushing flatten for field: {}",
-                    field
-                        .ident
-                        .as_ref()
-                        .map(|i| i.to_string())
-                        .unwrap_or_default()
-                );
                 field.attrs.push(syn::parse_quote! {
                    #[serde(flatten)]
                 });
@@ -283,7 +275,7 @@ impl<'a> SerializeBuilder<'a> {
 
         self.patch_ident(&mut patched);
         self.append_derive_serialize(&mut patched);
-        enum_insert_untagged(&mut patched);
+        // enum_insert_untagged(&mut patched);
         self.append_se_lifetime(&mut patched);
         self.patch_field_types(&mut patched);
         self.append_phatom_field(&mut patched);
@@ -456,7 +448,7 @@ impl<'a> DeserializeBuilder<'a> {
 
         self.patch_ident(&mut patched);
         self.append_derive_deserialize(&mut patched);
-        enum_insert_untagged(&mut patched);
+        // enum_insert_untagged(&mut patched);
         self.patch_field_types(&mut patched);
         input_apply_field_attributes(self.format, &mut patched)?;
 

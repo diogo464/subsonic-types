@@ -101,40 +101,18 @@ where
     where
         D: serde::Deserializer<'de>,
     {
-        struct SubsonicVisitor<T> {
-            format: Format,
-            _phantom: std::marker::PhantomData<T>,
-        }
-
-        impl<'de, T> serde::de::Visitor<'de> for SubsonicVisitor<T>
-        where
-            T: SubsonicDeserialize<'de>,
-        {
-            type Value = Option<T>;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("an option type")
+        match format {
+            Format::Json => {
+                let value =
+                    <Option<crate::Json<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                Ok(value.map(crate::Json::into_inner))
             }
-
-            fn visit_none<E>(self) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                Ok(None)
-            }
-
-            fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-            where
-                D: serde::de::Deserializer<'de>,
-            {
-                T::deserialize(deserializer, self.format).map(Some)
+            Format::Xml => {
+                let value =
+                    <Option<crate::Xml<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                Ok(value.map(crate::Xml::into_inner))
             }
         }
-
-        deserializer.deserialize_option(SubsonicVisitor {
-            format,
-            _phantom: std::marker::PhantomData,
-        })
     }
 }
 
