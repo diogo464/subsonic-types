@@ -779,26 +779,91 @@ pub struct User {
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Error {
     #[subsonic(attribute)]
-    pub code: u32,
+    pub code: ErrorCode,
     #[subsonic(attribute)]
     pub message: Option<String>,
 }
 
 impl Error {
-    pub fn new(code: u32) -> Self {
+    pub fn new(code: ErrorCode) -> Self {
         Error {
             code,
             message: None,
         }
     }
 
-    pub fn with_message(code: u32, message: impl Into<String>) -> Self {
+    pub fn with_message(code: ErrorCode, message: impl Into<String>) -> Self {
         Error {
             code,
             message: Some(message.into()),
         }
     }
 }
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u32)]
+pub enum ErrorCode {
+    #[default]
+    Generic = 0,
+    RequiredParameterMissing = 10,
+    IncompatibleClient = 20,
+    IncompatibleServer = 30,
+    WrongUsernameOrPassword = 40,
+    TokenAuthenticationNotSupported = 41,
+    UserNotAuthorizedForTheGivenOperation = 50,
+    TrialExpired = 60,
+    DataNotFound = 70,
+    Other(u32),
+}
+
+impl From<u32> for ErrorCode {
+    fn from(code: u32) -> Self {
+        match code {
+            0 => ErrorCode::Generic,
+            10 => ErrorCode::RequiredParameterMissing,
+            20 => ErrorCode::IncompatibleClient,
+            30 => ErrorCode::IncompatibleServer,
+            40 => ErrorCode::WrongUsernameOrPassword,
+            41 => ErrorCode::TokenAuthenticationNotSupported,
+            50 => ErrorCode::UserNotAuthorizedForTheGivenOperation,
+            60 => ErrorCode::TrialExpired,
+            70 => ErrorCode::DataNotFound,
+            _ => ErrorCode::Other(code),
+        }
+    }
+}
+
+impl From<ErrorCode> for u32 {
+    fn from(code: ErrorCode) -> Self {
+        match code {
+            ErrorCode::Generic => 0,
+            ErrorCode::RequiredParameterMissing => 10,
+            ErrorCode::IncompatibleClient => 20,
+            ErrorCode::IncompatibleServer => 30,
+            ErrorCode::WrongUsernameOrPassword => 40,
+            ErrorCode::TokenAuthenticationNotSupported => 41,
+            ErrorCode::UserNotAuthorizedForTheGivenOperation => 50,
+            ErrorCode::TrialExpired => 60,
+            ErrorCode::DataNotFound => 70,
+            ErrorCode::Other(code) => code,
+        }
+    }
+}
+
+impl serde::Serialize for ErrorCode {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_u32(u32::from(*self))
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for ErrorCode {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let code = u32::deserialize(deserializer)?;
+        Ok(ErrorCode::from(code))
+    }
+}
+
+impl_subsonic_for_serde!(ErrorCode);
 
 #[cfg(test)]
 mod tests {

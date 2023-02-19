@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use subsonic_macro::SubsonicRequest;
 
 #[allow(unused)]
 use crate::request::browsing::{GetGenres, GetMusicFolders};
@@ -26,7 +27,9 @@ pub enum ListType {
 /// Returns a list of random, newest, highest rated etc. albums. Similar to the album lists on the home page of the Subsonic web interface.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getAlbumList>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.2.0", path = "getAlbumList")]
 pub struct GetAlbumList {
     /// See [`ListType`].
     #[serde(rename = "type")] // TODO: rename
@@ -52,7 +55,9 @@ pub struct GetAlbumList {
 /// Similar to [`GetAlbumList`], but organizes music according to ID3 tags.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getAlbumList2>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.8.0", path = "getAlbumList2")]
 pub struct GetAlbumList2 {
     /// See [`ListType`].
     #[serde(rename = "type")] // TODO: rename
@@ -78,7 +83,9 @@ pub struct GetAlbumList2 {
 /// Returns random songs matching the given criteria.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getRandomSongs>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.2.0", path = "getRandomSongs")]
 pub struct GetRandomSongs {
     /// The maximum number of songs to return. Max 500.
     pub size: Option<u32>,
@@ -95,7 +102,9 @@ pub struct GetRandomSongs {
 /// Returns songs in a given genre.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getSongsByGenre>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.9.0", path = "getSongsByGenre")]
 pub struct GetSongsByGenre {
     /// The genre, as returned by [`GetGenres`].
     pub genre: String,
@@ -111,13 +120,17 @@ pub struct GetSongsByGenre {
 /// Returns what is currently being played by all users. Takes no extra parameters.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getNowPlaying>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.0.0", path = "getNowPlaying")]
 pub struct GetNowPlaying;
 
 /// Returns starred songs, albums and artists.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getStarred>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.8.0", path = "getStarred")]
 pub struct GetStarred {
     /// Since 1.12.0
     /// Only return albums in the music folder with the given ID. See [`GetMusicFolders`].
@@ -127,7 +140,9 @@ pub struct GetStarred {
 /// Returns starred songs, albums and artists.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getStarred2>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.12.0", path = "getStarred2")]
 pub struct GetStarred2 {
     /// Since 1.12.0
     /// Only return albums in the music folder with the given ID. See [`GetMusicFolders`].

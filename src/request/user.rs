@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use subsonic_macro::SubsonicRequest;
 
 use crate::common::AudioBitrate;
 
@@ -6,7 +7,9 @@ use crate::common::AudioBitrate;
 /// Can be used to enable/disable certain features in the client, such as jukebox control.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getUser>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.3.0", path = "getUser")]
 pub struct GetUser {
     /// The name of the user to retrieve.
     /// You can only retrieve your own user unless you have admin privileges.
@@ -17,13 +20,17 @@ pub struct GetUser {
 /// Only users with admin privileges are allowed to call this method.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getUsers>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.8.0", path = "getUsers")]
 pub struct GetUsers;
 
 /// Creates a new Subsonic user, using the following parameters.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#createUser>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.1.0", path = "createUser")]
 pub struct CreateUser {
     /// The name of the new user.
     pub username: String,
@@ -61,13 +68,16 @@ pub struct CreateUser {
     pub video_conversion_role: Option<bool>,
     /// Since 1.12.0
     /// IDs of the music folders the user is allowed access to. Include the parameter once for each folder.
+    #[serde(default)]
     pub music_folder_id: Vec<String>,
 }
 
 ///  Modifies an existing Subsonic user, using the following parameters.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#updateUser>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.10.1", path = "updateUser")]
 pub struct UpdateUser {
     /// The name of the user.
     pub username: String,
@@ -102,6 +112,7 @@ pub struct UpdateUser {
     pub video_conversion_role: Option<bool>,
     /// Since 1.12.0
     /// IDs of the music folders the user is allowed access to.
+    #[serde(default)]
     pub music_folder_id: Vec<String>,
     /// Since 1.13.0
     /// he maximum bit rate (in Kbps) for the user.
@@ -113,7 +124,9 @@ pub struct UpdateUser {
 /// Deletes an existing Subsonic user, using the following parameters.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#deleteUser>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.3.0", path = "deleteUser")]
 pub struct DeleteUser {
     /// The name of the user to delete.
     pub username: String,
@@ -121,7 +134,9 @@ pub struct DeleteUser {
 
 /// Changes the password of an existing Subsonic user, using the following parameters.
 /// You can only change your own password unless you have admin privileges.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.1.0", path = "changePassword")]
 pub struct ChangePassword {
     /// The name of the user which should change its password.
     pub username: String,

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use subsonic_macro::SubsonicRequest;
 
 #[allow(unused)]
 use crate::{common::Milliseconds, request::browsing::GetMusicFolders};
@@ -6,7 +7,9 @@ use crate::{common::Milliseconds, request::browsing::GetMusicFolders};
 /// Returns a listing of files matching the given search criteria. Supports paging through the result.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#search>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.0.0", path = "search")]
 pub struct Search {
     /// Artist to search for.
     pub artist: Option<String>,
@@ -28,7 +31,9 @@ pub struct Search {
 /// Returns albums, artists and songs matching the given search criteria. Supports paging through the result.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#search2>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.4.0", path = "search2")]
 pub struct Search2 {
     /// Search query.
     pub query: String,
@@ -52,7 +57,9 @@ pub struct Search2 {
 /// Similar to [`Search2`], but organizes music according to ID3 tags.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#search3>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[serde(rename_all = "camelCase")]
+#[subsonic(since = "1.8.0", path = "search3")]
 pub struct Search3 {
     /// Search query.
     pub query: String,

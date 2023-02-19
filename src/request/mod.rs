@@ -1,3 +1,5 @@
+use crate::common::Version;
+
 /// System methods
 pub mod system;
 
@@ -26,7 +28,7 @@ pub mod sharing;
 pub mod podcast;
 
 /// Jukebox methods
-pub mod jubebox;
+pub mod jukebox;
 
 /// Internet radio methods
 pub mod radio;
@@ -42,3 +44,8 @@ pub mod bookmark;
 
 /// Media library scanning methods
 pub mod scan;
+
+pub trait SubsonicRequest {
+    const PATH: &'static str;
+    const SINCE: Version;
+}
