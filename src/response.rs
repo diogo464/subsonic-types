@@ -141,10 +141,11 @@ pub struct Indexes {
     /// Note: Not sure that this is actually milliseconds
     #[subsonic(attribute)]
     pub last_modified: Milliseconds,
-    #[subsonic(attribute)]
+    #[subsonic(attribute, since = "1.10.0")]
     pub ignored_articles: String,
     pub shortcut: Vec<Artist>,
     pub index: Vec<Index>,
+    #[subsonic(since = "1.7.0")]
     pub child: Vec<Child>,
 }
 
@@ -161,13 +162,13 @@ pub struct Artist {
     pub id: String,
     #[subsonic(attribute)]
     pub name: String,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.16.1")]
     pub artist_image_url: Option<String>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.10.1")]
     pub starred: Option<DateTime>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.13.0")]
     pub user_rating: Option<UserRating>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.13.0")]
     pub average_rating: Option<AverageRating>,
 }
 
@@ -178,9 +179,9 @@ pub struct Genres {
 
 #[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct Genre {
-    #[subsonic(attribute)]
+    #[subsonic(attribute, since = "1.10.2")]
     pub song_count: u32,
-    #[subsonic(attribute)]
+    #[subsonic(attribute, since = "1.10.2")]
     pub album_count: u32,
     #[subsonic(value)]
     pub name: String,
@@ -189,7 +190,7 @@ pub struct Genre {
 #[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct ArtistsID3 {
     pub index: Vec<IndexID3>,
-    #[subsonic(attribute)]
+    #[subsonic(attribute, since = "1.10.0")]
     pub ignored_articles: String,
 }
 
@@ -208,7 +209,7 @@ pub struct ArtistID3 {
     pub name: String,
     #[subsonic(attribute, optional)]
     pub cover_art: Option<String>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.16.1")]
     pub artist_image_url: Option<String>,
     #[subsonic(attribute)]
     pub album_count: u32,
@@ -239,15 +240,15 @@ pub struct AlbumID3 {
     pub song_count: u32,
     #[subsonic(attribute)]
     pub duration: u32,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.14.0")]
     pub play_count: Option<u64>,
     #[subsonic(attribute, optional)]
     pub created: Option<DateTime>,
     #[subsonic(attribute, optional)]
     pub starred: Option<DateTime>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.10.1")]
     pub year: Option<u32>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.10.1")]
     pub genre: Option<String>,
 }
 
@@ -308,13 +309,13 @@ pub struct Directory {
     pub parent: Option<String>,
     #[subsonic(attribute)]
     pub name: String,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.10.1")]
     pub starred: Option<DateTime>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.13.0")]
     pub user_rating: Option<UserRating>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.13.0")]
     pub average_rating: Option<AverageRating>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.14.0")]
     pub play_count: Option<u64>,
     pub child: Vec<Child>,
 }
@@ -357,31 +358,31 @@ pub struct Child {
     pub bit_rate: Option<u32>,
     #[subsonic(attribute, optional)]
     pub path: Option<String>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.4.1")]
     pub is_video: Option<bool>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.6.0")]
     pub user_rating: Option<UserRating>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.6.0")]
     pub average_rating: Option<AverageRating>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.14.0")]
     pub play_count: Option<u64>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.8.0")]
     pub disc_number: Option<u32>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.8.0")]
     pub created: Option<DateTime>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.8.0")]
     pub starred: Option<DateTime>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.8.0")]
     pub album_id: Option<String>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.8.0")]
     pub artist_id: Option<String>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.8.0")]
     pub media_type: Option<MediaType>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.10.1")]
     pub bookmark_position: Option<u64>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.13.0")]
     pub original_width: Option<u32>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.13.0")]
     pub original_height: Option<u32>,
 }
 
@@ -439,22 +440,23 @@ pub struct Playlist {
     pub id: String,
     #[subsonic(attribute)]
     pub name: String,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.8.0")]
     pub comment: Option<String>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.8.0")]
     pub owner: Option<String>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.8.0")]
     pub public: Option<bool>,
-    #[subsonic(attribute)]
+    #[subsonic(attribute, since = "1.8.0")]
     pub song_count: u32,
-    #[subsonic(attribute)]
+    #[subsonic(attribute, since = "1.8.0")]
     pub duration: u32,
-    #[subsonic(attribute)]
+    #[subsonic(attribute, since = "1.8.0")]
     pub created: DateTime,
-    #[subsonic(attribute)]
+    #[subsonic(attribute, since = "1.13.0")]
     pub changed: DateTime,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.11.0")]
     pub cover_art: Option<String>,
+    #[subsonic(since = "1.8.0")]
     pub allowed_user: Vec<String>,
 }
 
@@ -473,7 +475,7 @@ pub struct JukeboxStatus {
     pub playing: bool,
     #[subsonic(attribute)]
     pub gain: f32,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.7.0")]
     pub position: Option<u32>,
 }
 
@@ -537,9 +539,9 @@ pub struct PodcastChannel {
     pub title: Option<String>,
     #[subsonic(attribute)]
     pub description: Option<String>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.13.0")]
     pub cover_art: Option<String>,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.13.0")]
     pub original_image_url: Option<String>,
     #[subsonic(attribute)]
     pub status: PodcastStatus,
@@ -557,9 +559,10 @@ pub struct NewestPodcasts {
 pub struct PodcastEpisode {
     #[subsonic(flatten)]
     pub child: Child,
+    /// Use this ID for streaming the podcast
     #[subsonic(attribute, optional)]
     pub stream_id: Option<String>,
-    #[subsonic(attribute)]
+    #[subsonic(attribute, since = "1.13.0")]
     pub channel_id: String,
     #[subsonic(attribute, optional)]
     pub description: Option<String>,
@@ -619,10 +622,12 @@ pub struct Bookmark {
 
 #[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct PlayQueue {
+    /// ID of the currently playing song
     #[subsonic(attribute)]
-    pub current: Option<u64>,
+    pub current: Option<u64>, // TODO: u64?
+    /// Position of the currently playing track
     #[subsonic(attribute, optional)]
-    pub position: Option<u64>,
+    pub position: Option<Milliseconds>,
     #[subsonic(attribute)]
     pub username: String,
     #[subsonic(attribute)]
@@ -739,11 +744,11 @@ pub struct Users {
 pub struct User {
     #[subsonic(attribute)]
     pub username: String,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.6.0")]
     pub email: Option<String>,
-    #[subsonic(attribute)]
+    #[subsonic(attribute, since = "1.7.0")]
     pub scrobbling_enabled: bool,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.13.0")]
     pub max_bit_rate: Option<u64>,
     #[subsonic(attribute)]
     pub admin_role: bool,
@@ -765,11 +770,11 @@ pub struct User {
     pub stream_role: bool,
     #[subsonic(attribute)]
     pub jukebox_role: bool,
-    #[subsonic(attribute)]
+    #[subsonic(attribute, since = "1.7.0")]
     pub share_role: bool,
-    #[subsonic(attribute)]
+    #[subsonic(attribute, since = "1.14.0")]
     pub video_conversion_role: bool,
-    #[subsonic(attribute, optional)]
+    #[subsonic(attribute, optional, since = "1.14.0")]
     pub avatar_last_changed: Option<DateTime>,
     pub folder: Vec<u32>,
 }
