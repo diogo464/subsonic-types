@@ -10,7 +10,7 @@ use crate::{impl_from_query_value_for_parse, impl_to_query_value_for_display};
 #[derive(Debug, Clone, PartialEq)]
 pub struct DateTime(PrimitiveDateTime);
 //pub struct DateTime(chrono::DateTime<chrono::FixedOffset>);
-impl_subsonic_for_serde!(DateTime);
+impl_subsonic!(DateTime);
 impl_to_query_value_for_display!(DateTime);
 impl_from_query_value_for_parse!(DateTime);
 
@@ -84,7 +84,7 @@ impl<'de> Deserialize<'de> for DateTime {
     Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
 pub struct Milliseconds(u64);
-impl_subsonic_for_serde!(Milliseconds);
+impl_subsonic!(Milliseconds);
 impl_to_query_value_for_display!(Milliseconds);
 impl_from_query_value_for_parse!(Milliseconds);
 
@@ -132,7 +132,7 @@ impl FromStr for Milliseconds {
 /// When used to represent an instant in time, it is relative to the Unix epoch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Seconds(u64);
-impl_subsonic_for_serde!(Seconds);
+impl_subsonic!(Seconds);
 impl_to_query_value_for_display!(Seconds);
 impl_from_query_value_for_parse!(Seconds);
 
@@ -193,7 +193,7 @@ pub struct VideoSize {
     pub width: u32,
     pub height: u32,
 }
-impl_subsonic_for_serde!(VideoSize);
+impl_subsonic!(VideoSize);
 impl_to_query_value_for_display!(VideoSize);
 impl_from_query_value_for_parse!(VideoSize);
 
@@ -279,7 +279,7 @@ pub struct VideoBitrate {
     pub bitrate: u32,
     pub size: Option<VideoSize>,
 }
-impl_subsonic_for_serde!(VideoBitrate);
+impl_subsonic!(VideoBitrate);
 impl_to_query_value_for_display!(VideoBitrate);
 impl_from_query_value_for_parse!(VideoBitrate);
 
@@ -383,7 +383,7 @@ pub enum AudioBitrate {
     /// 192 kbit/s.
     Kbps192,
     /// 224 kbit/s.
-    Kbps224,    
+    Kbps224,
     /// 256 kbit/s.
     Kbps256,
     /// 320 kbit/s.
@@ -391,7 +391,7 @@ pub enum AudioBitrate {
     /// Other bitrate.
     Other(u32),
 }
-impl_subsonic_for_serde!(AudioBitrate);
+impl_subsonic!(AudioBitrate);
 impl_to_query_value_for_display!(AudioBitrate);
 impl_from_query_value_for_parse!(AudioBitrate);
 
@@ -493,7 +493,7 @@ pub enum MediaType {
     AudioBook,
     Video,
 }
-impl_subsonic_for_serde!(MediaType);
+impl_subsonic!(MediaType);
 
 #[derive(Debug)]
 pub struct InvalidUserRating;
@@ -508,7 +508,7 @@ impl std::error::Error for InvalidUserRating {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub struct UserRating(u32);
-impl_subsonic_for_serde!(UserRating);
+impl_subsonic!(UserRating);
 impl_to_query_value_for_display!(UserRating);
 impl_from_query_value_for_parse!(UserRating);
 
@@ -577,7 +577,7 @@ impl std::fmt::Display for InvalidAverageRating {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct AverageRating(f32);
-impl_subsonic_for_serde!(AverageRating);
+impl_subsonic!(AverageRating);
 
 impl AverageRating {
     pub fn new(value: f32) -> Result<Self, InvalidAverageRating> {
@@ -657,7 +657,7 @@ pub struct Version {
     pub minor: u8,
     pub patch: u8,
 }
-impl_subsonic_for_serde!(Version);
+impl_subsonic!(Version);
 
 impl Version {
     pub const LATEST: Self = Self::V1_16_1;
@@ -686,6 +686,10 @@ impl Version {
             minor,
             patch,
         }
+    }
+
+    pub const fn as_u32(self) -> u32 {
+        (self.major as u32) << 16 | (self.minor as u32) << 8 | (self.patch as u32)
     }
 }
 

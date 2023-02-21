@@ -9,7 +9,7 @@ pub enum ResponseStatus {
     Ok,
     Failed,
 }
-impl_subsonic_for_serde!(ResponseStatus);
+impl_subsonic!(ResponseStatus);
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct Response {
@@ -581,7 +581,7 @@ pub enum PodcastStatus {
     #[default]
     Error,
 }
-impl_subsonic_for_serde!(PodcastStatus);
+impl_subsonic!(PodcastStatus);
 
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 pub struct InternetRadioStations {
@@ -866,7 +866,7 @@ impl<'de> serde::Deserialize<'de> for ErrorCode {
     }
 }
 
-impl_subsonic_for_serde!(ErrorCode);
+impl_subsonic!(ErrorCode);
 
 #[cfg(test)]
 mod tests {

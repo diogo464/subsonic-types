@@ -14,9 +14,9 @@ impl<T> MaybeSerialize<T> {
     }
 }
 
-impl<T> Serialize for MaybeSerialize<T>
+impl<T> serde::Serialize for MaybeSerialize<T>
 where
-    T: Serialize,
+    T: serde::Serialize,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

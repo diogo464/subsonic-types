@@ -1,88 +1,124 @@
+use crate::common::Version;
+
 use super::Format;
 
-pub trait SubsonicSerialize {
-    fn serialize<S>(&self, serializer: S, format: Format) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer;
-}
+pub trait SubsonicSerialize<'s> {
+    type Input: 's;
 
-impl<T> SubsonicSerialize for &T
-where
-    T: SubsonicSerialize,
-{
-    fn serialize<S>(&self, serializer: S, format: Format) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        T::serialize(*self, serializer, format)
-    }
+    type Output: serde::Serialize + 's;
+
+    fn prepare(input: Self::Input, format: Format, version: Version) -> Self::Output;
 }
 
 pub trait SubsonicDeserialize<'de>: Sized {
-    fn deserialize<D>(deserializer: D, format: Format) -> Result<Self, D::Error>
+    fn deserialize<D>(format: Format, version: Version, deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>;
 }
 
-macro_rules! impl_subsonic_for_serde {
-    ($t:path) => {
-        impl $crate::deser::SubsonicSerialize for $t {
-            fn serialize<S>(
-                &self,
-                serializer: S,
-                _: $crate::deser::Format,
-            ) -> std::result::Result<S::Ok, S::Error>
-            where
-                S: serde::Serializer,
-            {
-                <Self as serde::Serialize>::serialize(self, serializer)
-            }
-        }
+macro_rules! impl_subsonic_serialize_for_copy {
+    ($($type:ty),*) => {
+        $(
+            impl<'s> $crate::deser::SubsonicSerialize<'s> for $type {
+                type Input = &'s $type;
+                type Output = $type;
 
-        impl<'de> $crate::deser::SubsonicDeserialize<'de> for $t {
-            fn deserialize<D>(
-                deserializer: D,
-                _: $crate::deser::Format,
-            ) -> std::result::Result<Self, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                <Self as serde::Deserialize<'de>>::deserialize(deserializer)
+                fn prepare(input: Self::Input, _: $crate::deser::Format, _: $crate::common::Version) -> Self::Output {
+                    *input
+                }
             }
-        }
+        )*
     };
 }
 
-impl_subsonic_for_serde!(u8);
-impl_subsonic_for_serde!(u16);
-impl_subsonic_for_serde!(u32);
-impl_subsonic_for_serde!(u64);
-impl_subsonic_for_serde!(u128);
-impl_subsonic_for_serde!(usize);
-impl_subsonic_for_serde!(i8);
-impl_subsonic_for_serde!(i16);
-impl_subsonic_for_serde!(i32);
-impl_subsonic_for_serde!(i64);
-impl_subsonic_for_serde!(i128);
-impl_subsonic_for_serde!(isize);
-impl_subsonic_for_serde!(f32);
-impl_subsonic_for_serde!(f64);
-impl_subsonic_for_serde!(bool);
-impl_subsonic_for_serde!(char);
-impl_subsonic_for_serde!(String);
+macro_rules! impl_subsonic_serialize {
+    ($($type:ty),*) => {
+        $(
+            impl<'s> $crate::deser::SubsonicSerialize<'s> for $type {
+                type Input = &'s $type;
+                type Output = &'s $type;
 
-impl<T> SubsonicSerialize for Option<T>
+                fn prepare(input: Self::Input, _: $crate::deser::Format, _: $crate::common::Version) -> Self::Output {
+                    input
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! impl_subsonic_deserialize {
+    ($($type:ty),*) => {
+        $(
+            impl<'de> $crate::deser::SubsonicDeserialize<'de> for $type {
+                fn deserialize<D>(_: $crate::deser::Format, _: $crate::common::Version, deserializer: D) -> Result<Self, D::Error>
+                where
+                    D: serde::Deserializer<'de>,
+                {
+                    <$type as serde::Deserialize<'de>>::deserialize(deserializer)
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! impl_subsonic {
+    ($($type:ty),*) => {
+        impl_subsonic_serialize!($($type),*);
+        impl_subsonic_deserialize!($($type),*);
+    };
+}
+
+impl_subsonic_serialize_for_copy!(bool, u8, u16, u32, u64, i8, i16, i32, i64, f32, f64);
+impl_subsonic_serialize!(String);
+impl_subsonic_deserialize!(bool, u8, u16, u32, u64, i8, i16, i32, i64, f32, f64, String);
+
+impl<'s, T> SubsonicSerialize<'s> for Option<T>
 where
-    T: SubsonicSerialize,
+    T: SubsonicSerialize<'s> + 's,
 {
-    fn serialize<S>(&self, serializer: S, format: crate::deser::Format) -> Result<S::Ok, S::Error>
+    type Input = Option<T::Input>;
+
+    type Output = Option<T::Output>;
+
+    fn prepare(input: Self::Input, format: Format, version: Version) -> Self::Output {
+        input.map(|input| T::prepare(input, format, version))
+    }
+}
+
+struct VecOutput<'s, T> {
+    data: &'s [T],
+    version: Version,
+    format: Format,
+}
+
+impl<'s, T> serde::Serialize for VecOutput<'s, T>
+where
+    T: SubsonicSerialize<'s, Input = &'s T> + 's,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        match self {
-            Some(value) => value.serialize(serializer, format),
-            None => serializer.serialize_none(),
+        use serde::ser::SerializeSeq;
+
+        let mut seq = serializer.serialize_seq(Some(self.data.len()))?;
+        for item in self.data {
+            seq.serialize_element(&T::prepare(item, self.format, self.version))?;
         }
+        seq.end()
+    }
+}
+
+impl<'s, T> SubsonicSerialize<'s> for Vec<T>
+where
+    T: SubsonicSerialize<'s, Input = &'s T> + 's,
+{
+    type Input = &'s Self;
+
+    type Output = VecOutput<'s, T>;
+
+    fn prepare(input: Self::Input, format: Format, version: Version) -> Self::Output {
+        todo!()
     }
 }
 
@@ -90,51 +126,50 @@ impl<'de, T> SubsonicDeserialize<'de> for Option<T>
 where
     T: SubsonicDeserialize<'de>,
 {
-    fn deserialize<D>(deserializer: D, format: crate::deser::Format) -> Result<Self, D::Error>
+    fn deserialize<D>(format: Format, version: Version, deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        match format {
-            Format::Json => {
-                let value = <Option<crate::deser::Json<T>> as serde::Deserialize>::deserialize(
-                    deserializer,
-                )?;
-                Ok(value.map(crate::deser::Json::into_inner))
+        struct Visitor<T> {
+            format: Format,
+            version: Version,
+            _phantom: std::marker::PhantomData<T>,
+        }
+
+        impl<'de, T> serde::de::Visitor<'de> for Visitor<T>
+        where
+            T: SubsonicDeserialize<'de>,
+        {
+            type Value = Option<T>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("an optional value")
             }
-            Format::Xml => {
-                let value = <Option<crate::deser::Xml<T>> as serde::Deserialize>::deserialize(
+
+            fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                Ok(Some(T::deserialize(
+                    self.format,
+                    self.version,
                     deserializer,
-                )?;
-                Ok(value.map(crate::deser::Xml::into_inner))
+                )?))
+            }
+
+            fn visit_none<E>(self) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(None)
             }
         }
-    }
-}
 
-impl<T> SubsonicSerialize for Vec<T>
-where
-    T: SubsonicSerialize,
-{
-    fn serialize<S>(&self, serializer: S, format: crate::deser::Format) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeSeq;
-
-        let mut seq = serializer.serialize_seq(Some(self.len()))?;
-        match format {
-            Format::Json => {
-                for value in self {
-                    seq.serialize_element(&crate::deser::Json::new(value))?;
-                }
-            }
-            Format::Xml => {
-                for value in self {
-                    seq.serialize_element(&crate::deser::Xml::new(value))?;
-                }
-            }
-        }
-        seq.end()
+        deserializer.deserialize_option(Visitor {
+            format,
+            version,
+            _phantom: std::marker::PhantomData,
+        })
     }
 }
 
@@ -142,27 +177,68 @@ impl<'de, T> SubsonicDeserialize<'de> for Vec<T>
 where
     T: SubsonicDeserialize<'de>,
 {
-    fn deserialize<D>(deserializer: D, format: Format) -> Result<Self, D::Error>
+    fn deserialize<D>(format: Format, version: Version, deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        match format {
-            Format::Json => {
-                let value =
-                    <Vec<crate::deser::Json<T>> as serde::Deserialize>::deserialize(deserializer)?;
-                Ok(value
-                    .into_iter()
-                    .map(crate::deser::Json::into_inner)
-                    .collect())
-            }
-            Format::Xml => {
-                let value =
-                    <Vec<crate::deser::Xml<T>> as serde::Deserialize>::deserialize(deserializer)?;
-                Ok(value
-                    .into_iter()
-                    .map(crate::deser::Xml::into_inner)
-                    .collect())
+        #[derive(Clone, Copy)]
+        struct Seed<T> {
+            format: Format,
+            version: Version,
+            _phantom: std::marker::PhantomData<T>,
+        }
+
+        impl<'de, T> serde::de::DeserializeSeed<'de> for Seed<T>
+        where
+            T: SubsonicDeserialize<'de>,
+        {
+            type Value = T;
+
+            fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                T::deserialize(self.format, self.version, deserializer)
             }
         }
+
+        struct Visitor<T> {
+            format: Format,
+            version: Version,
+            _phantom: std::marker::PhantomData<T>,
+        }
+
+        impl<'de, T> serde::de::Visitor<'de> for Visitor<T>
+        where
+            T: SubsonicDeserialize<'de>,
+        {
+            type Value = Vec<T>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a vector")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>,
+            {
+                let seed = Seed {
+                    format: self.format,
+                    version: self.version,
+                    _phantom: std::marker::PhantomData,
+                };
+                let mut vec = Vec::new();
+                while let Some(item) = seq.next_element_seed(seed)? {
+                    vec.push(item);
+                }
+                Ok(vec)
+            }
+        }
+
+        deserializer.deserialize_seq(Visitor {
+            format,
+            version,
+            _phantom: std::marker::PhantomData,
+        })
     }
 }

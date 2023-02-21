@@ -1,5 +1,9 @@
+use crate::common::Version;
+
+use super::{Format, MaybeSerialize, SubsonicSerialize};
+
 #[derive(Default)]
-struct Versioned<T, const VERSION: u32>(std::marker::PhantomData<T>);
+pub struct Versioned<T, const VERSION: u32>(std::marker::PhantomData<T>);
 
 impl<'s, T, const VERSION: u32> SubsonicSerialize<'s> for Versioned<T, VERSION>
 where

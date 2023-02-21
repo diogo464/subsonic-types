@@ -30,7 +30,7 @@ pub enum JukeboxAction {
     Shuffle,
     SetGain,
 }
-impl_subsonic_for_serde!(JukeboxAction);
+impl_subsonic!(JukeboxAction);
 impl_from_query_value_for_parse!(JukeboxAction);
 impl_to_query_value_for_display!(JukeboxAction);
 
