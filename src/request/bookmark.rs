@@ -69,8 +69,6 @@ pub struct SavePlayQueue {
 
 #[cfg(test)]
 mod tests {
-    use crate::request::SubsonicRequest;
-
     use super::super::tests::test_request_encode;
     use super::*;
 

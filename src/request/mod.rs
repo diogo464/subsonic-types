@@ -45,10 +45,6 @@ pub mod bookmark;
 /// Media library scanning methods
 pub mod scan;
 
-// internal module
-mod query;
-pub use query::QueryError;
-
 pub trait SubsonicRequest:
     crate::query::ToQuery
     + crate::query::FromQuery
@@ -86,41 +82,5 @@ mod tests {
         );
         assert_eq!(req, &req2.unwrap(), "query: {}", query);
         query
-    }
-
-    #[test]
-    fn test_subsonic_request() {
-        let request = chat::AddChatMessage {
-            message: "Hello".to_string(),
-        };
-        assert_eq!("message=Hello", query::to_query(&request));
-
-        let request = annotation::Unstar {
-            id: vec!["1".to_string(), "2".to_string()],
-            album_id: vec!["3".to_string(), "4".to_string()],
-            artist_id: vec!["5".to_string(), "6".to_string()],
-        };
-        assert_eq!(
-            "id=1&id=2&albumId=3&albumId=4&artistId=5&artistId=6",
-            query::to_query(&request)
-        );
-    }
-
-    #[test]
-    fn test_deserializer() {
-        let query = "message=Hello";
-        let request: chat::AddChatMessage = query::from_query(query).unwrap();
-        assert_eq!(request.message, "Hello");
-
-        let query = "id=1&id=2&albumId=3&albumId=4&artistId=5&artistId=6";
-        let request: annotation::Unstar = query::from_query(query).unwrap();
-        assert_eq!(
-            annotation::Unstar {
-                id: vec!["1".to_string(), "2".to_string()],
-                album_id: vec!["3".to_string(), "4".to_string()],
-                artist_id: vec!["5".to_string(), "6".to_string()],
-            },
-            request
-        );
     }
 }
