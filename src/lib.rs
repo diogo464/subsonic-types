@@ -1,14 +1,8 @@
 #![feature(string_extend_from_within)]
 
 #[macro_use]
-pub(crate) mod traits;
-pub(crate) mod helper;
+pub(crate) mod deser;
 pub(crate) mod query;
-pub(crate) mod wrapper;
-
-pub(crate) use subsonic_macro::SubsonicType;
-pub(crate) use traits::*;
-pub(crate) use wrapper::{Json, Xml};
 
 pub mod common;
 pub mod request;
@@ -58,6 +52,7 @@ impl From<quick_xml::DeError> for SerdeError {
 /// # }
 /// ```
 pub fn to_json(response: &Response) -> Result<String, SerdeError> {
+    use deser::Json;
     use serde::Serialize;
     #[derive(Serialize)]
     struct SubsonicResponse<'a> {
@@ -90,7 +85,9 @@ pub fn to_json(response: &Response) -> Result<String, SerdeError> {
 /// # }
 /// ```
 pub fn to_xml(response: &Response) -> Result<String, SerdeError> {
+    use deser::Xml;
     use serde::Serialize;
+
     let wrapper = Xml::new(response);
     let mut buffer = String::default();
     let serializer = quick_xml::se::Serializer::with_root(&mut buffer, Some("subsonic-response"))?;
@@ -119,6 +116,7 @@ pub fn to_xml(response: &Response) -> Result<String, SerdeError> {
 /// # }
 /// ```
 pub fn from_json(json: &str) -> Result<Response, SerdeError> {
+    use deser::Json;
     use serde::Deserialize;
 
     #[derive(Deserialize)]
@@ -152,6 +150,8 @@ pub fn from_json(json: &str) -> Result<Response, SerdeError> {
 /// # }
 /// ```
 pub fn from_xml(xml: &str) -> Result<Response, SerdeError> {
+    use deser::Xml;
+
     let response: Xml<Response> = quick_xml::de::from_str(xml)?;
     Ok(response.into_inner())
 }

@@ -1,7 +1,4 @@
-pub enum Format {
-    Json,
-    Xml,
-}
+use super::Format;
 
 pub trait SubsonicSerialize {
     fn serialize<S>(&self, serializer: S, format: Format) -> Result<S::Ok, S::Error>
@@ -33,11 +30,11 @@ impl<'de, T: SubsonicSerialize + SubsonicDeserialize<'de>> SubsonicType<'de> for
 
 macro_rules! impl_subsonic_for_serde {
     ($t:path) => {
-        impl crate::SubsonicSerialize for $t {
+        impl $crate::deser::SubsonicSerialize for $t {
             fn serialize<S>(
                 &self,
                 serializer: S,
-                _: crate::Format,
+                _: $crate::deser::Format,
             ) -> std::result::Result<S::Ok, S::Error>
             where
                 S: serde::Serializer,
@@ -46,10 +43,10 @@ macro_rules! impl_subsonic_for_serde {
             }
         }
 
-        impl<'de> crate::SubsonicDeserialize<'de> for $t {
+        impl<'de> $crate::deser::SubsonicDeserialize<'de> for $t {
             fn deserialize<D>(
                 deserializer: D,
-                _: crate::Format,
+                _: $crate::deser::Format,
             ) -> std::result::Result<Self, D::Error>
             where
                 D: serde::Deserializer<'de>,
@@ -82,7 +79,7 @@ impl<T> SubsonicSerialize for Option<T>
 where
     T: SubsonicSerialize,
 {
-    fn serialize<S>(&self, serializer: S, format: crate::Format) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S, format: crate::deser::Format) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
@@ -97,20 +94,20 @@ impl<'de, T> SubsonicDeserialize<'de> for Option<T>
 where
     T: SubsonicDeserialize<'de>,
 {
-    fn deserialize<D>(deserializer: D, format: crate::Format) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D, format: crate::deser::Format) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         match format {
             Format::Json => {
                 let value =
-                    <Option<crate::Json<T>> as serde::Deserialize>::deserialize(deserializer)?;
-                Ok(value.map(crate::Json::into_inner))
+                    <Option<crate::deser::Json<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                Ok(value.map(crate::deser::Json::into_inner))
             }
             Format::Xml => {
                 let value =
-                    <Option<crate::Xml<T>> as serde::Deserialize>::deserialize(deserializer)?;
-                Ok(value.map(crate::Xml::into_inner))
+                    <Option<crate::deser::Xml<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                Ok(value.map(crate::deser::Xml::into_inner))
             }
         }
     }
@@ -120,7 +117,7 @@ impl<T> SubsonicSerialize for Vec<T>
 where
     T: SubsonicSerialize,
 {
-    fn serialize<S>(&self, serializer: S, format: crate::Format) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S, format: crate::deser::Format) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
@@ -130,12 +127,12 @@ where
         match format {
             Format::Json => {
                 for value in self {
-                    seq.serialize_element(&crate::Json::new(value))?;
+                    seq.serialize_element(&crate::deser::Json::new(value))?;
                 }
             }
             Format::Xml => {
                 for value in self {
-                    seq.serialize_element(&crate::Xml::new(value))?;
+                    seq.serialize_element(&crate::deser::Xml::new(value))?;
                 }
             }
         }
@@ -153,12 +150,12 @@ where
     {
         match format {
             Format::Json => {
-                let value = <Vec<crate::Json<T>> as serde::Deserialize>::deserialize(deserializer)?;
-                Ok(value.into_iter().map(crate::Json::into_inner).collect())
+                let value = <Vec<crate::deser::Json<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                Ok(value.into_iter().map(crate::deser::Json::into_inner).collect())
             }
             Format::Xml => {
-                let value = <Vec<crate::Xml<T>> as serde::Deserialize>::deserialize(deserializer)?;
-                Ok(value.into_iter().map(crate::Xml::into_inner).collect())
+                let value = <Vec<crate::deser::Xml<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                Ok(value.into_iter().map(crate::deser::Xml::into_inner).collect())
             }
         }
     }

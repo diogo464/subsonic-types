@@ -1,9 +1,7 @@
 use serde::{Deserialize, Serialize};
+use subsonic_macro::SubsonicType;
 
-use crate::{
-    common::{AverageRating, DateTime, MediaType, Milliseconds, UserRating, Version},
-    SubsonicType,
-};
+use crate::common::{AverageRating, DateTime, MediaType, Milliseconds, UserRating, Version};
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

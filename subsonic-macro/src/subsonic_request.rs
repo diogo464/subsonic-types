@@ -190,6 +190,7 @@ fn expand_to_query(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> 
     }
 
     let output = quote::quote! {
+        #[automatically_derived]
         impl crate::query::ToQuery for #ident {
             fn to_query_builder<B>(&self, builder: &mut B)
             where
@@ -274,6 +275,7 @@ fn expand_from_query(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream
         }
 
         let output = quote::quote! {
+            #[automatically_derived]
             impl crate::query::QueryAccumulator for #ident {
                 type Output = #input_ident;
 
@@ -311,6 +313,7 @@ fn expand_from_query(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream
             #accum_struct
             #accum_impl
 
+            #[automatically_derived]
             impl crate::query::FromQuery for #ident {
                 type QueryAccumulator = #accum_ident;
             }

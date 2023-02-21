@@ -17,7 +17,7 @@ struct Attributes {
     /// On the json side, this is ignored.
     attribute: bool,
     /// Is this field an Option<> that should be skipped if it is None?
-    /// If it is then this translates to `#[serde(skip_serializing_if = "crate::helper::macro_helper_is_none")]`.
+    /// If it is then this translates to `#[serde(skip_serializing_if = "crate::deser::is_none")]`.
     optional: bool,
     /// Should the field be flattened
     /// If it is then this translates to `#[serde(flatten)]`.
@@ -157,7 +157,7 @@ impl Attributes {
 
         if self.optional {
             field.attrs.push(syn::parse_quote! {
-                #[serde(skip_serializing_if = "crate::helper::is_none")]
+                #[serde(skip_serializing_if = "crate::deser::is_none")]
             });
         }
 
@@ -231,7 +231,7 @@ fn serde_wrapper(format: Format) -> syn::Path {
         },
         proc_macro2::Span::call_site(),
     );
-    syn::parse_quote!(crate::#ident)
+    syn::parse_quote!(crate::deser::#ident)
 }
 
 struct SerializeOutput {
@@ -295,7 +295,7 @@ impl<'a> SerializeBuilder<'a> {
                         #(
                             #field_idents: From::from(&value.#field_idents),
                         )*
-                        __subsonice_phantom: std::marker::PhantomData,
+                        __subsonic_phantom: std::marker::PhantomData,
                     }
                 }
             }
@@ -392,14 +392,14 @@ impl<'a> SerializeBuilder<'a> {
                 fields.named.push(syn::Field {
                     attrs: vec![syn::parse_quote!(#[serde(skip)])],
                     vis: syn::Visibility::Inherited,
-                    ident: syn::parse_quote!(__subsonice_phantom),
+                    ident: syn::parse_quote!(__subsonic_phantom),
                     colon_token: Some(syn::Token![:](proc_macro2::Span::call_site())),
                     ty: syn::parse_quote!(std::marker::PhantomData<&#lifetime ()>),
                 });
             }
             syn::Data::Enum(syn::DataEnum { variants, .. }) => {
                 variants.push(syn::Variant {
-                    ident: syn::Ident::new("__subsonice_phantom", proc_macro2::Span::call_site()),
+                    ident: syn::Ident::new("__subsonic_phantom", proc_macro2::Span::call_site()),
                     fields: syn::Fields::Unnamed(
                         syn::parse_quote! {(std::marker::PhantomData<&#lifetime ()>)},
                     ),
@@ -581,21 +581,22 @@ pub fn expand(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
             #de_xml_patched
             #de_xml_impl
 
-            impl crate::SubsonicSerialize for #input_ident {
+            #[automatically_derived]
+            impl crate::deser::SubsonicSerialize for #input_ident {
                 fn serialize<S>(
                     &self,
                     serializer: S,
-                    format: crate::Format,
+                    format: crate::deser::Format,
                 ) -> Result<S::Ok, S::Error>
                 where
                     S: serde::Serializer,
                 {
                     match format {
-                        crate::Format::Json => {
+                        crate::deser::Format::Json => {
                             let value = #se_json_ident::from(self);
                             value.serialize(serializer)
                         }
-                        crate::Format::Xml => {
+                        crate::deser::Format::Xml => {
                             let value = #se_xml_ident::from(self);
                             value.serialize(serializer)
                         }
@@ -603,20 +604,21 @@ pub fn expand(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
                 }
             }
 
-            impl<'de> crate::SubsonicDeserialize<'de> for #input_ident {
+            #[automatically_derived]
+            impl<'de> crate::deser::SubsonicDeserialize<'de> for #input_ident {
                 fn deserialize<D>(
                     deserializer: D,
-                    format: crate::Format,
+                    format: crate::deser::Format,
                 ) -> Result<Self, D::Error>
                 where
                     D: serde::Deserializer<'de>,
                 {
                     match format {
-                        crate::Format::Json => {
+                        crate::deser::Format::Json => {
                             let value = #de_json_ident::deserialize(deserializer)?;
                             Ok(value.into())
                         }
-                        crate::Format::Xml => {
+                        crate::deser::Format::Xml => {
                             let value = #de_xml_ident::deserialize(deserializer)?;
                             Ok(value.into())
                         }

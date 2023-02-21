@@ -1,4 +1,4 @@
-use crate::{Format, SubsonicDeserialize, SubsonicSerialize};
+use super::{Format, SubsonicDeserialize, SubsonicSerialize};
 
 macro_rules! impl_format_wrapper {
     ($t:ident, $f:expr) => {
