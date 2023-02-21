@@ -1,12 +1,6 @@
-use crate::util;
+use syn::Result;
 
-type Result<T, E = syn::Error> = std::result::Result<T, E>;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum Format {
-    Json,
-    Xml,
-}
+use crate::{attr, common::Format, util};
 
 struct Attributes {
     /// The name to use for the field in the serialized format.
@@ -39,26 +33,7 @@ struct Attributes {
 
 impl Attributes {
     fn extract(attrs: &mut Vec<syn::Attribute>) -> Result<Self> {
-        let mut extracted = Vec::new();
-        let mut index = 0;
-        while index < attrs.len() {
-            let attr = &attrs[index];
-            if attr.path.is_ident("subsonic") {
-                extracted.push(attr.clone());
-                attrs.remove(index);
-            } else {
-                index += 1;
-            }
-        }
-        Self::from_attrs(&extracted)
-    }
-
-    fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
-        let mut metas = Vec::new();
-        for attr in attrs {
-            metas.push(attr.parse_meta()?);
-        }
-
+        let metas = attr::extract_meta_list(attrs)?;
         let mut rename = None;
         let mut attribute = false;
         let mut optional = false;
@@ -68,53 +43,33 @@ impl Attributes {
         let mut since = String::new();
 
         for meta in metas {
-            match &meta {
-                syn::Meta::List(list @ syn::MetaList { nested, .. })
-                    if list.path.is_ident("subsonic") =>
-                {
-                    for n in nested {
-                        match n {
-                            syn::NestedMeta::Meta(syn::Meta::NameValue(nv))
-                                if nv.path.is_ident("rename") =>
-                            {
-                                if let syn::Lit::Str(s) = &nv.lit {
-                                    rename = Some(s.value());
-                                }
-                            }
-                            syn::NestedMeta::Meta(syn::Meta::Path(p))
-                                if p.is_ident("attribute") =>
-                            {
-                                attribute = true;
-                            }
-                            syn::NestedMeta::Meta(syn::Meta::Path(p)) if p.is_ident("optional") => {
-                                optional = true;
-                            }
-                            syn::NestedMeta::Meta(syn::Meta::Path(p)) if p.is_ident("flatten") => {
-                                flatten = true;
-                            }
-                            syn::NestedMeta::Meta(syn::Meta::Path(p)) if p.is_ident("choice") => {
-                                choice = true;
-                            }
-                            syn::NestedMeta::Meta(syn::Meta::Path(p)) if p.is_ident("value") => {
-                                value = true;
-                            }
-                            syn::NestedMeta::Meta(syn::Meta::NameValue(nv))
-                                if nv.path.is_ident("since") =>
-                            {
-                                if let syn::Lit::Str(s) = &nv.lit {
-                                    since = s.value();
-                                }
-                            }
-                            _ => {
-                                return Err(syn::Error::new_spanned(
-                                    n,
-                                    "Invalid subsonic attribute",
-                                ))
-                            }
-                        }
+            match meta {
+                syn::Meta::NameValue(nv) if attr::RENAME == nv.path => {
+                    if let syn::Lit::Str(s) = &nv.lit {
+                        rename = Some(s.value());
                     }
                 }
-                _ => continue,
+                syn::Meta::Path(p) if attr::ATTRIBUTE == p => {
+                    attribute = true;
+                }
+                syn::Meta::Path(p) if attr::OPTIONAL == p => {
+                    optional = true;
+                }
+                syn::Meta::Path(p) if attr::FLATTEN == p => {
+                    flatten = true;
+                }
+                syn::Meta::Path(p) if attr::CHOICE == p => {
+                    choice = true;
+                }
+                syn::Meta::Path(p) if attr::VALUE == p => {
+                    value = true;
+                }
+                syn::Meta::NameValue(nv) if attr::SINCE == nv.path => {
+                    if let syn::Lit::Str(s) = &nv.lit {
+                        since = s.value();
+                    }
+                }
+                _ => return Err(syn::Error::new_spanned(meta, "Invalid subsonic attribute")),
             }
         }
 

@@ -1,7 +1,8 @@
-mod util;
 mod attr;
+mod common;
 mod subsonic_request;
 mod subsonic_type;
+mod util;
 
 #[proc_macro_derive(SubsonicType, attributes(subsonic))]
 pub fn subsonic(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

@@ -24,10 +24,6 @@ pub trait SubsonicDeserialize<'de>: Sized {
         D: serde::Deserializer<'de>;
 }
 
-pub trait SubsonicType<'de>: SubsonicSerialize + SubsonicDeserialize<'de> {}
-
-impl<'de, T: SubsonicSerialize + SubsonicDeserialize<'de>> SubsonicType<'de> for T {}
-
 macro_rules! impl_subsonic_for_serde {
     ($t:path) => {
         impl $crate::deser::SubsonicSerialize for $t {
@@ -100,13 +96,15 @@ where
     {
         match format {
             Format::Json => {
-                let value =
-                    <Option<crate::deser::Json<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                let value = <Option<crate::deser::Json<T>> as serde::Deserialize>::deserialize(
+                    deserializer,
+                )?;
                 Ok(value.map(crate::deser::Json::into_inner))
             }
             Format::Xml => {
-                let value =
-                    <Option<crate::deser::Xml<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                let value = <Option<crate::deser::Xml<T>> as serde::Deserialize>::deserialize(
+                    deserializer,
+                )?;
                 Ok(value.map(crate::deser::Xml::into_inner))
             }
         }
@@ -150,12 +148,20 @@ where
     {
         match format {
             Format::Json => {
-                let value = <Vec<crate::deser::Json<T>> as serde::Deserialize>::deserialize(deserializer)?;
-                Ok(value.into_iter().map(crate::deser::Json::into_inner).collect())
+                let value =
+                    <Vec<crate::deser::Json<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                Ok(value
+                    .into_iter()
+                    .map(crate::deser::Json::into_inner)
+                    .collect())
             }
             Format::Xml => {
-                let value = <Vec<crate::deser::Xml<T>> as serde::Deserialize>::deserialize(deserializer)?;
-                Ok(value.into_iter().map(crate::deser::Xml::into_inner).collect())
+                let value =
+                    <Vec<crate::deser::Xml<T>> as serde::Deserialize>::deserialize(deserializer)?;
+                Ok(value
+                    .into_iter()
+                    .map(crate::deser::Xml::into_inner)
+                    .collect())
             }
         }
     }

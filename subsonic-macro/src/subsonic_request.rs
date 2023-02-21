@@ -1,38 +1,6 @@
-use crate::{attr, util};
+use syn::Result;
 
-type Result<T, E = syn::Error> = std::result::Result<T, E>;
-
-struct Version {
-    major: u8,
-    minor: u8,
-    patch: u8,
-}
-
-impl Version {
-    fn parse(v: &str) -> Option<Self> {
-        let mut parts = v.split('.');
-        let major = parts.next()?.parse().ok()?;
-        let minor = parts.next()?.parse().ok()?;
-        let patch = parts.next()?.parse().ok()?;
-        Some(Self {
-            major,
-            minor,
-            patch,
-        })
-    }
-}
-
-impl quote::ToTokens for Version {
-    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        let major = self.major;
-        let minor = self.minor;
-        let patch = self.patch;
-        quote::quote! {
-            crate::common::Version::new(#major, #minor, #patch)
-        }
-        .to_tokens(tokens)
-    }
-}
+use crate::{attr, common::Version, util};
 
 struct ContainerAttributes {
     since: Version,
@@ -41,60 +9,39 @@ struct ContainerAttributes {
 
 impl ContainerAttributes {
     fn extract(attrs: &mut Vec<syn::Attribute>) -> Result<Self> {
-        let metas = attr::extract_named_meta("subsonic", attrs)?;
+        let metas = attr::extract_meta_list(attrs)?;
         let mut since = None;
         let mut path = None;
 
         for meta in metas {
             match &meta {
-                syn::Meta::List(list @ syn::MetaList { nested, .. })
-                    if list.path.is_ident("subsonic") =>
-                {
-                    for n in nested {
-                        match n {
-                            syn::NestedMeta::Meta(syn::Meta::NameValue(
-                                nv @ syn::MetaNameValue {
-                                    lit: syn::Lit::Str(value),
-                                    ..
-                                },
-                            )) if nv.path.is_ident("since") => {
-                                if since.is_some() {
-                                    return Err(syn::Error::new_spanned(
-                                        nv,
-                                        "Duplicate since attribute",
-                                    ));
-                                } else {
-                                    let v = Version::parse(&value.value()).ok_or_else(|| {
-                                        syn::Error::new_spanned(nv, "Invalid version")
-                                    })?;
-                                    since = Some(v);
-                                }
-                            }
-                            syn::NestedMeta::Meta(syn::Meta::NameValue(
-                                nv @ syn::MetaNameValue {
-                                    lit: syn::Lit::Str(value),
-                                    ..
-                                },
-                            )) if nv.path.is_ident("path") => {
-                                if path.is_some() {
-                                    return Err(syn::Error::new_spanned(
-                                        nv,
-                                        "Duplicate path attribute",
-                                    ));
-                                } else {
-                                    path = Some(value.value());
-                                }
-                            }
-                            _ => {
-                                return Err(syn::Error::new_spanned(
-                                    n,
-                                    "Invalid subsonic attribute",
-                                ))
-                            }
-                        }
+                syn::Meta::NameValue(
+                    meta @ syn::MetaNameValue {
+                        lit: syn::Lit::Str(value),
+                        ..
+                    },
+                ) if attr::SINCE == meta.path => {
+                    if since.is_some() {
+                        return Err(syn::Error::new_spanned(meta, "Duplicate attribute"));
+                    } else {
+                        let v = Version::parse(&value.value())
+                            .ok_or_else(|| syn::Error::new_spanned(meta, "Invalid version"))?;
+                        since = Some(v);
                     }
                 }
-                _ => continue,
+                syn::Meta::NameValue(
+                    meta @ syn::MetaNameValue {
+                        lit: syn::Lit::Str(value),
+                        ..
+                    },
+                ) if attr::PATH == meta.path => {
+                    if path.is_some() {
+                        return Err(syn::Error::new_spanned(meta, "Duplicate attribute"));
+                    } else {
+                        path = Some(value.value());
+                    }
+                }
+                _ => return Err(syn::Error::new_spanned(meta, "Invalid subsonic attribute")),
             }
         }
 
