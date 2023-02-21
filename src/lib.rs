@@ -1,6 +1,9 @@
+#![feature(string_extend_from_within)]
+
 #[macro_use]
 pub(crate) mod traits;
 pub(crate) mod helper;
+pub(crate) mod query;
 pub(crate) mod wrapper;
 
 pub(crate) use subsonic_macro::SubsonicType;

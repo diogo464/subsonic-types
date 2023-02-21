@@ -1,8 +1,20 @@
 use serde::{Deserialize, Serialize};
 use subsonic_macro::SubsonicRequest;
 
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+use crate::{impl_from_query_value_for_parse, impl_to_query_value_for_display};
+
+#[derive(Debug)]
+pub struct InvalidJukeboxAction;
+
+impl std::fmt::Display for InvalidJukeboxAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Invalid jukebox action")
+    }
+}
+
+impl std::error::Error for InvalidJukeboxAction {}
+
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub enum JukeboxAction {
     Get,
     /// Since 1.7.0
@@ -17,6 +29,67 @@ pub enum JukeboxAction {
     Remove,
     Shuffle,
     SetGain,
+}
+impl_subsonic_for_serde!(JukeboxAction);
+impl_from_query_value_for_parse!(JukeboxAction);
+impl_to_query_value_for_display!(JukeboxAction);
+
+impl JukeboxAction {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            JukeboxAction::Get => "get",
+            JukeboxAction::Status => "status",
+            JukeboxAction::Set => "set",
+            JukeboxAction::Start => "start",
+            JukeboxAction::Stop => "stop",
+            JukeboxAction::Skip => "skip",
+            JukeboxAction::Add => "add",
+            JukeboxAction::Clear => "clear",
+            JukeboxAction::Remove => "remove",
+            JukeboxAction::Shuffle => "shuffle",
+            JukeboxAction::SetGain => "setGain",
+        }
+    }
+}
+
+impl std::fmt::Display for JukeboxAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl std::str::FromStr for JukeboxAction {
+    type Err = InvalidJukeboxAction;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "get" => Ok(JukeboxAction::Get),
+            "status" => Ok(JukeboxAction::Status),
+            "set" => Ok(JukeboxAction::Set),
+            "start" => Ok(JukeboxAction::Start),
+            "stop" => Ok(JukeboxAction::Stop),
+            "skip" => Ok(JukeboxAction::Skip),
+            "add" => Ok(JukeboxAction::Add),
+            "clear" => Ok(JukeboxAction::Clear),
+            "remove" => Ok(JukeboxAction::Remove),
+            "shuffle" => Ok(JukeboxAction::Shuffle),
+            "setGain" => Ok(JukeboxAction::SetGain),
+            _ => Err(InvalidJukeboxAction),
+        }
+    }
+}
+
+impl serde::Serialize for JukeboxAction {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for JukeboxAction {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        s.parse().map_err(serde::de::Error::custom)
+    }
 }
 
 /// Controls the jukebox, i.e., playback directly on the server's audio hardware.

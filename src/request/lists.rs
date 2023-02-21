@@ -1,11 +1,22 @@
 use serde::{Deserialize, Serialize};
 use subsonic_macro::SubsonicRequest;
 
+use crate::{impl_to_query_value_for_display, impl_from_query_value_for_parse};
 #[allow(unused)]
 use crate::request::browsing::{GetGenres, GetMusicFolders};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug)]
+pub struct InvalidListType;
+
+impl std::fmt::Display for InvalidListType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Invalid list type")
+    }
+}
+
+impl std::error::Error for InvalidListType {}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum ListType {
     Random,
     Newest,
@@ -22,6 +33,71 @@ pub enum ListType {
     ByYear,
     /// Since 1.10.1
     ByGenre,
+}
+impl_subsonic_for_serde!(ListType);
+impl_to_query_value_for_display!(ListType);
+impl_from_query_value_for_parse!(ListType);
+
+impl ListType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ListType::Random => "random",
+            ListType::Newest => "newest",
+            ListType::Highest => "highest",
+            ListType::Frequent => "frequent",
+            ListType::Recent => "recent",
+            ListType::AlphabeticalByName => "alphabeticalByName",
+            ListType::AlphabeticalByArtist => "alphabeticalByArtist",
+            ListType::Starred => "starred",
+            ListType::ByYear => "byYear",
+            ListType::ByGenre => "byGenre",
+        }
+    }
+}
+
+impl std::fmt::Display for ListType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl std::str::FromStr for ListType {
+    type Err = InvalidListType;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "random" => Ok(ListType::Random),
+            "newest" => Ok(ListType::Newest),
+            "highest" => Ok(ListType::Highest),
+            "frequent" => Ok(ListType::Frequent),
+            "recent" => Ok(ListType::Recent),
+            "alphabeticalByName" => Ok(ListType::AlphabeticalByName),
+            "alphabeticalByArtist" => Ok(ListType::AlphabeticalByArtist),
+            "starred" => Ok(ListType::Starred),
+            "byYear" => Ok(ListType::ByYear),
+            "byGenre" => Ok(ListType::ByGenre),
+            _ => Err(InvalidListType),
+        }
+    }
+}
+
+impl serde::Serialize for ListType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for ListType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        s.parse().map_err(serde::de::Error::custom)
+    }
 }
 
 /// Returns a list of random, newest, highest rated etc. albums. Similar to the album lists on the home page of the Subsonic web interface.

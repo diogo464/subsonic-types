@@ -3,12 +3,15 @@ use std::{str::FromStr, time::Duration};
 use serde::{Deserialize, Serialize};
 use time::PrimitiveDateTime;
 
+use crate::{impl_from_query_value_for_parse, impl_to_query_value_for_display};
+
 /// A date and time.
 /// Use [`time::PrimitiveDateTime`] to convert to and from [`DateTime`].
 #[derive(Debug, Clone, PartialEq)]
 pub struct DateTime(PrimitiveDateTime);
 //pub struct DateTime(chrono::DateTime<chrono::FixedOffset>);
 impl_subsonic_for_serde!(DateTime);
+impl_to_query_value_for_display!(DateTime);
 
 impl From<PrimitiveDateTime> for DateTime {
     fn from(datetime: PrimitiveDateTime) -> Self {
@@ -81,6 +84,7 @@ impl<'de> Deserialize<'de> for DateTime {
 )]
 pub struct Milliseconds(u64);
 impl_subsonic_for_serde!(Milliseconds);
+impl_to_query_value_for_display!(Milliseconds);
 
 impl Milliseconds {
     pub fn new(milliseconds: u64) -> Self {
@@ -108,6 +112,12 @@ impl From<Milliseconds> for Duration {
     }
 }
 
+impl std::fmt::Display for Milliseconds {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl FromStr for Milliseconds {
     type Err = std::num::ParseIntError;
 
@@ -120,6 +130,8 @@ impl FromStr for Milliseconds {
 /// When used to represent an instant in time, it is relative to the Unix epoch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Seconds(u64);
+impl_subsonic_for_serde!(Seconds);
+impl_to_query_value_for_display!(Seconds);
 
 impl Seconds {
     pub fn new(seconds: u64) -> Self {
@@ -144,6 +156,12 @@ impl From<u64> for Seconds {
 impl From<Seconds> for Duration {
     fn from(seconds: Seconds) -> Self {
         seconds.into_duration()
+    }
+}
+
+impl std::fmt::Display for Seconds {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -172,6 +190,8 @@ pub struct VideoSize {
     pub width: u32,
     pub height: u32,
 }
+impl_subsonic_for_serde!(VideoSize);
+impl_to_query_value_for_display!(VideoSize);
 
 impl VideoSize {
     pub fn new(width: u32, height: u32) -> Self {
@@ -255,6 +275,8 @@ pub struct VideoBitrate {
     pub bitrate: u32,
     pub size: Option<VideoSize>,
 }
+impl_subsonic_for_serde!(VideoBitrate);
+impl_to_query_value_for_display!(VideoBitrate);
 
 impl VideoBitrate {
     pub fn new(bitrate: u32, size: Option<VideoSize>) -> Self {
@@ -317,6 +339,17 @@ impl<'de> Deserialize<'de> for VideoBitrate {
     }
 }
 
+#[derive(Debug)]
+pub struct InvalidAudioBitrate;
+
+impl std::fmt::Display for InvalidAudioBitrate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "invalid audio bitrate")
+    }
+}
+
+impl std::error::Error for InvalidAudioBitrate {}
+
 /// An audio bitrate in kbit/s.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AudioBitrate {
@@ -353,6 +386,8 @@ pub enum AudioBitrate {
     /// Other bitrate.
     Other(u32),
 }
+impl_subsonic_for_serde!(AudioBitrate);
+impl_to_query_value_for_display!(AudioBitrate);
 
 impl AudioBitrate {
     pub fn new(bitrate: u32) -> Self {
@@ -410,6 +445,21 @@ impl From<AudioBitrate> for u32 {
     }
 }
 
+impl std::fmt::Display for AudioBitrate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_kbps())
+    }
+}
+
+impl std::str::FromStr for AudioBitrate {
+    type Err = InvalidAudioBitrate;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bitrate = s.parse().map_err(|_| InvalidAudioBitrate)?;
+        Ok(Self::new(bitrate))
+    }
+}
+
 impl Serialize for AudioBitrate {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -453,6 +503,8 @@ impl std::error::Error for InvalidUserRating {}
 #[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub struct UserRating(u32);
 impl_subsonic_for_serde!(UserRating);
+impl_to_query_value_for_display!(UserRating);
+impl_from_query_value_for_parse!(UserRating);
 
 impl UserRating {
     pub fn new(value: u32) -> Result<Self, InvalidUserRating> {

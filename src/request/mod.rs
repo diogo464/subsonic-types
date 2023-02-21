@@ -45,7 +45,82 @@ pub mod bookmark;
 /// Media library scanning methods
 pub mod scan;
 
-pub trait SubsonicRequest {
+// internal module
+mod query;
+pub use query::QueryError;
+
+pub trait SubsonicRequest:
+    serde::Serialize
+    + serde::de::DeserializeOwned
+    + std::fmt::Debug
+    + std::cmp::PartialEq
+    + std::clone::Clone
+{
     const PATH: &'static str;
     const SINCE: Version;
+
+    fn to_query(&self) -> String {
+        query::to_query(self)
+    }
+
+    fn from_query(query: &str) -> Result<Self, query::QueryError> {
+        query::from_query(query)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    pub(super) fn test_request_encode<T>(req: &T) -> String
+    where
+        T: SubsonicRequest,
+    {
+        let query = req.to_query();
+        let req2: Result<T, super::QueryError> = query::from_query(&query);
+        assert!(
+            req2.is_ok(),
+            "failed to parse from query: '{}' error: '{}'",
+            query,
+            req2.unwrap_err()
+        );
+        assert_eq!(req, &req2.unwrap(), "query: {}", query);
+        query
+    }
+
+    #[test]
+    fn test_subsonic_request() {
+        let request = chat::AddChatMessage {
+            message: "Hello".to_string(),
+        };
+        assert_eq!("message=Hello", query::to_query(&request));
+
+        let request = annotation::Unstar {
+            id: vec!["1".to_string(), "2".to_string()],
+            album_id: vec!["3".to_string(), "4".to_string()],
+            artist_id: vec!["5".to_string(), "6".to_string()],
+        };
+        assert_eq!(
+            "id=1&id=2&albumId=3&albumId=4&artistId=5&artistId=6",
+            query::to_query(&request)
+        );
+    }
+
+    #[test]
+    fn test_deserializer() {
+        let query = "message=Hello";
+        let request: chat::AddChatMessage = query::from_query(query).unwrap();
+        assert_eq!(request.message, "Hello");
+
+        let query = "id=1&id=2&albumId=3&albumId=4&artistId=5&artistId=6";
+        let request: annotation::Unstar = query::from_query(query).unwrap();
+        assert_eq!(
+            annotation::Unstar {
+                id: vec!["1".to_string(), "2".to_string()],
+                album_id: vec!["3".to_string(), "4".to_string()],
+                artist_id: vec!["5".to_string(), "6".to_string()],
+            },
+            request
+        );
+    }
 }

@@ -1,3 +1,4 @@
+mod attr;
 mod subsonic_request;
 mod subsonic_type;
 

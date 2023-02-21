@@ -82,3 +82,166 @@ pub struct Scrobble {
     /// Whether this is a "submission" or a "now playing" notification.
     pub submission: Option<bool>,
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::request::SubsonicRequest;
+
+    use super::super::tests::test_request_encode;
+    use super::*;
+
+    #[test]
+    fn test_star() {
+        let request = Star {
+            id: vec!["1".to_string()],
+            album_id: vec![],
+            artist_id: vec![],
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "id=1");
+
+        let request = Star {
+            id: vec![],
+            album_id: vec!["1".to_string()],
+            artist_id: vec![],
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "albumId=1");
+
+        let request = Star {
+            id: vec![],
+            album_id: vec![],
+            artist_id: vec!["1".to_string()],
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "artistId=1");
+
+        let request = Star {
+            id: vec!["1".to_string()],
+            album_id: vec!["2".to_string()],
+            artist_id: vec!["3".to_string()],
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "id=1&albumId=2&artistId=3");
+
+        let request = Star {
+            id: vec!["1".to_string(), "2".to_string()],
+            album_id: vec!["3".to_string(), "4".to_string()],
+            artist_id: vec!["5".to_string(), "6".to_string()],
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(
+            encoded,
+            "id=1&id=2&albumId=3&albumId=4&artistId=5&artistId=6"
+        );
+    }
+
+    #[test]
+    fn test_unstar() {
+        let request = Unstar {
+            id: vec!["1".to_string()],
+            album_id: vec![],
+            artist_id: vec![],
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "id=1");
+
+        let request = Unstar {
+            id: vec![],
+            album_id: vec!["1".to_string()],
+            artist_id: vec![],
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "albumId=1");
+
+        let request = Unstar {
+            id: vec![],
+            album_id: vec![],
+            artist_id: vec!["1".to_string()],
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "artistId=1");
+
+        let request = Unstar {
+            id: vec!["1".to_string()],
+            album_id: vec!["2".to_string()],
+            artist_id: vec!["3".to_string()],
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "id=1&albumId=2&artistId=3");
+
+        let request = Unstar {
+            id: vec!["1".to_string(), "2".to_string()],
+            album_id: vec!["3".to_string(), "4".to_string()],
+            artist_id: vec!["5".to_string(), "6".to_string()],
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(
+            encoded,
+            "id=1&id=2&albumId=3&albumId=4&artistId=5&artistId=6"
+        );
+    }
+
+    #[test]
+    fn test_set_rating() {
+        let request = SetRating {
+            id: "1".to_string(),
+            rating: UserRating::new(5).unwrap(),
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "id=1&rating=5");
+
+        let request = SetRating {
+            id: "1".to_string(),
+            rating: UserRating::new(2).unwrap(),
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "id=1&rating=2");
+
+        let encoded = "id=1";
+        SetRating::from_query(encoded).unwrap_err();
+    }
+
+    #[test]
+    fn test_scrobble() {
+        let request = Scrobble {
+            id: vec!["1".to_string()],
+            time: vec![],
+            submission: None,
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "id=1");
+
+        let request = Scrobble {
+            id: vec![],
+            time: vec![Milliseconds::new(1)],
+            submission: None,
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "time=1");
+
+        let request = Scrobble {
+            id: vec!["1".to_string()],
+            time: vec![Milliseconds::new(1)],
+            submission: None,
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "id=1&time=1");
+
+        let request = Scrobble {
+            id: vec!["1".to_string(), "2".to_string()],
+            time: vec![Milliseconds::new(1), Milliseconds::new(2)],
+            submission: None,
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "id=1&id=2&time=1&time=2");
+
+        let request = Scrobble {
+            id: vec!["1".to_string(), "2".to_string()],
+            time: vec![Milliseconds::new(1), Milliseconds::new(2)],
+            submission: Some(true),
+        };
+        let encoded = test_request_encode(&request);
+        assert_eq!(encoded, "id=1&id=2&time=1&time=2&submission=true");
+    }
+}

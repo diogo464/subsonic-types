@@ -66,3 +66,41 @@ pub struct SavePlayQueue {
     /// The position in milliseconds within the currently playing song.
     pub position: Option<Milliseconds>,
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::request::SubsonicRequest;
+
+    use super::super::tests::test_request_encode;
+    use super::*;
+
+    #[test]
+    fn test_get_bookmarks() {
+        let request = super::GetBookmarks;
+        let query = test_request_encode(&request);
+        assert_eq!("", query);
+    }
+
+    #[test]
+    fn test_create_bookmark() {
+        let request = super::CreateBookmark {
+            id: "1".to_string(),
+            position: Milliseconds::new(1000),
+            comment: None,
+        };
+        let query = test_request_encode(&request);
+        assert_eq!("id=1&position=1000", query);
+
+        // Test with comment
+        let request = super::CreateBookmark {
+            id: "1".to_string(),
+            position: Milliseconds::new(1000),
+            comment: Some("test".to_string()),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!("id=1&position=1000&comment=test", query);
+    }
+
+    #[test]
+    fn test_delete_bookmarks() {}
+}
