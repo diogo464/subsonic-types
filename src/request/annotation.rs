@@ -242,6 +242,6 @@ mod tests {
             submission: Some(true),
         };
         let encoded = test_request_encode(&request);
-        assert_eq!(encoded, "id=1&id=2&time=1&time=2&submission=true");
+        assert_eq!(encoded, "id=1&id=2&time=1&time=2&submission");
     }
 }

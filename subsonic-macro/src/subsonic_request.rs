@@ -1,4 +1,4 @@
-use crate::attr;
+use crate::{attr, util};
 
 type Result<T, E = syn::Error> = std::result::Result<T, E>;
 
@@ -151,6 +151,16 @@ fn input_get_data_struct(input: &syn::DeriveInput) -> Result<&syn::DataStruct> {
     }
 }
 
+fn field_get_name_str(field: &syn::Field) -> Result<String> {
+    field
+        .ident
+        .as_ref()
+        .map(|i| i.to_string())
+        .as_deref()
+        .map(util::string_to_camel_case)
+        .ok_or_else(|| syn::Error::new_spanned(field, "Field must be named"))
+}
+
 fn expand_to_query(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
     let data = input_get_data_struct(&input)?;
     let ident = &input.ident;
@@ -164,10 +174,7 @@ fn expand_to_query(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> 
     for field in data.fields.iter() {
         let field_ty = &field.ty;
         let field_ident = &field.ident;
-        let field_ident_str = field_ident
-            .as_ref()
-            .expect("Field must be named")
-            .to_string();
+        let field_ident_str = field_get_name_str(field)?;
 
         let attrs = FieldAttributes::obtain(&field.attrs)?;
         let stmt = if attrs.flatten {
@@ -196,7 +203,119 @@ fn expand_to_query(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> 
 }
 
 fn expand_from_query(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
-    let output = quote::quote! {};
+    fn expand_accum_struct(
+        ident: &syn::Ident,
+        data: &syn::DataStruct,
+    ) -> Result<proc_macro2::TokenStream> {
+        let mut fields = Vec::new();
+        for field in data.fields.iter() {
+            let attrs = FieldAttributes::obtain(&field.attrs)?;
+            let field_ty = &field.ty;
+            let field_ident = &field.ident;
+            if attrs.flatten {
+                fields.push(quote::quote! {
+                    #field_ident: <#field as crate::query::FromQuery>::QueryAccumulator
+                });
+            } else {
+                fields.push(quote::quote! {
+                    #field_ident: <#field_ty as crate::query::FromQueryValue>::QueryValueAccumulator
+                });
+            }
+        }
+
+        let output = quote::quote! {
+            #[derive(Default)]
+            pub struct #ident {
+                #(#fields,)*
+            }
+        };
+        Ok(output)
+    }
+
+    fn expand_accum_impl(
+        ident: &syn::Ident,
+        input: &syn::DeriveInput,
+    ) -> Result<proc_macro2::TokenStream> {
+        let input_ident = &input.ident;
+        let data = input_get_data_struct(&input)?;
+
+        let field_ident = data.fields.iter().map(|f| &f.ident);
+
+        let mut regular_field_match_args = Vec::new();
+        let mut regular_field_finish = Vec::new();
+
+        let mut flattened_field_match_args = Vec::new();
+
+        for field in data.fields.iter() {
+            let attrs = FieldAttributes::obtain(&field.attrs)?;
+            let field_ident = &field.ident;
+            let field_ident_str = field_get_name_str(field)?;
+
+            if attrs.flatten {
+                let arm = quote::quote! {};
+                flattened_field_match_args.push(arm);
+            } else {
+                let arm = quote::quote! {
+                    #field_ident_str => {
+                        self.#field_ident
+                            .consume(pair.value)
+                            .map_err(|e| crate::query::QueryParseError::invalid_value(#field_ident_str, e))?;
+                        Ok(crate::query::ConsumeStatus::Consumed)
+                    }
+                };
+                let finish = quote::quote! {
+                    let #field_ident = self.#field_ident
+                        .finish()
+                        .map_err(|e| crate::query::QueryParseError::invalid_value(#field_ident_str, e))?;
+                };
+                regular_field_match_args.push(arm);
+                regular_field_finish.push(finish);
+            }
+        }
+
+        let output = quote::quote! {
+            impl crate::query::QueryAccumulator for #ident {
+                type Output = #input_ident;
+
+                fn consume<'a>(&mut self, pair: crate::query::QueryPair<'a>) -> crate::query::Result<crate::query::ConsumeStatus<'a>> {
+                    use crate::query::QueryAccumulator;
+                    use crate::query::QueryValueAccumulator;
+
+                    match pair.key.as_ref() {
+                        #(#regular_field_match_args)*
+                        _ => Ok(crate::query::ConsumeStatus::Ignored(pair)),
+                    }
+                }
+
+                fn finish(self) -> crate::query::Result<Self::Output> {
+                    use crate::query::QueryAccumulator;
+                    use crate::query::QueryValueAccumulator;
+
+                    #(#regular_field_finish)*
+
+                    Ok(#input_ident { #(#field_ident),*})
+                }
+            }
+        };
+        Ok(output)
+    }
+
+    let data = input_get_data_struct(&input)?;
+    let ident = &input.ident;
+    let accum_ident = quote::format_ident!("{}Accum", ident);
+
+    let accum_struct = expand_accum_struct(&accum_ident, &data)?;
+    let accum_impl = expand_accum_impl(&accum_ident, &input)?;
+    let output = quote::quote! {
+        const _: () = {
+            #accum_struct
+            #accum_impl
+
+            impl crate::query::FromQuery for #ident {
+                type QueryAccumulator = #accum_ident;
+            }
+        };
+    };
     Ok(output)
 }
 

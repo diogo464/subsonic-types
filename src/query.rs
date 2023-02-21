@@ -67,9 +67,25 @@ impl QueryParseError {
     }
 }
 
+impl std::fmt::Display for QueryParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InvalidValue { key, error } => {
+                write!(f, "invalid value for key {}: {}", key, error)
+            }
+            Self::UnknownKey { key } => write!(f, "unknown key: {}", key),
+            Self::InvalidQueryString { query, message } => {
+                write!(f, "invalid query string {}: {}", query, message)
+            }
+        }
+    }
+}
+
+impl std::error::Error for QueryParseError {}
+
 pub struct QueryPair<'a> {
-    key: QueryKey<'a>,
-    value: QueryValue<'a>,
+    pub key: QueryKey<'a>,
+    pub value: QueryValue<'a>,
 }
 
 pub enum ConsumeStatus<'a> {
@@ -227,7 +243,11 @@ mod basic {
 
         fn next(&mut self) -> Option<Self::Item> {
             let segment = self.iter.next()?;
-            Some(segment_to_query_pair(segment))
+            if !segment.is_empty() {
+                Some(segment_to_query_pair(segment))
+            } else {
+                None
+            }
         }
     }
 
@@ -290,8 +310,6 @@ where
         <T as ToQueryValue>::to_query_builder(self, builder, encode_as);
     }
 }
-
-impl_to_query_value_for_display!(u8, u16, u32, u64, i8, i16, i32, i64, f32, f64, &str, String);
 
 impl ToQueryValue for bool {
     fn to_query_builder<B>(&self, builder: &mut B, encode_as: &str)
@@ -471,7 +489,7 @@ impl QueryValueAccumulator for QueryValueAccumulatorBool {
                 "false" | "0" => false,
                 _ => return Err(QueryValueParseError::message("invalid boolean value")),
             },
-            None => false,
+            None => true,
         };
         self.value = Some(value);
         Ok(())
@@ -483,6 +501,10 @@ impl QueryValueAccumulator for QueryValueAccumulatorBool {
             None => Err(QueryValueParseError::empty_value()),
         }
     }
+}
+
+impl FromQueryValue for bool {
+    type QueryValueAccumulator = QueryValueAccumulatorBool;
 }
 
 #[macro_export]
@@ -515,6 +537,8 @@ macro_rules! impl_to_query_value_for_display {
 impl_from_query_value_for_parse!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, String
 );
+
+impl_to_query_value_for_display!(u8, u16, u32, u64, i8, i16, i32, i64, f32, f64, &str, String);
 
 #[cfg(test)]
 mod tests {

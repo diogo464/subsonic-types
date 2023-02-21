@@ -50,8 +50,8 @@ mod query;
 pub use query::QueryError;
 
 pub trait SubsonicRequest:
-    serde::Serialize
-    + serde::de::DeserializeOwned
+    crate::query::ToQuery
+    + crate::query::FromQuery
     + std::fmt::Debug
     + std::cmp::PartialEq
     + std::clone::Clone
@@ -60,11 +60,11 @@ pub trait SubsonicRequest:
     const SINCE: Version;
 
     fn to_query(&self) -> String {
-        query::to_query(self)
+        crate::query::to_query(self)
     }
 
-    fn from_query(query: &str) -> Result<Self, query::QueryError> {
-        query::from_query(query)
+    fn from_query(query: &str) -> Result<Self, crate::query::QueryParseError> {
+        crate::query::from_query(query)
     }
 }
 
@@ -77,7 +77,7 @@ mod tests {
         T: SubsonicRequest,
     {
         let query = req.to_query();
-        let req2: Result<T, super::QueryError> = query::from_query(&query);
+        let req2: Result<T, _> = crate::query::from_query(&query);
         assert!(
             req2.is_ok(),
             "failed to parse from query: '{}' error: '{}'",

@@ -12,6 +12,7 @@ pub struct DateTime(PrimitiveDateTime);
 //pub struct DateTime(chrono::DateTime<chrono::FixedOffset>);
 impl_subsonic_for_serde!(DateTime);
 impl_to_query_value_for_display!(DateTime);
+impl_from_query_value_for_parse!(DateTime);
 
 impl From<PrimitiveDateTime> for DateTime {
     fn from(datetime: PrimitiveDateTime) -> Self {
@@ -85,6 +86,7 @@ impl<'de> Deserialize<'de> for DateTime {
 pub struct Milliseconds(u64);
 impl_subsonic_for_serde!(Milliseconds);
 impl_to_query_value_for_display!(Milliseconds);
+impl_from_query_value_for_parse!(Milliseconds);
 
 impl Milliseconds {
     pub fn new(milliseconds: u64) -> Self {
@@ -132,6 +134,7 @@ impl FromStr for Milliseconds {
 pub struct Seconds(u64);
 impl_subsonic_for_serde!(Seconds);
 impl_to_query_value_for_display!(Seconds);
+impl_from_query_value_for_parse!(Seconds);
 
 impl Seconds {
     pub fn new(seconds: u64) -> Self {
@@ -192,6 +195,7 @@ pub struct VideoSize {
 }
 impl_subsonic_for_serde!(VideoSize);
 impl_to_query_value_for_display!(VideoSize);
+impl_from_query_value_for_parse!(VideoSize);
 
 impl VideoSize {
     pub fn new(width: u32, height: u32) -> Self {
@@ -277,6 +281,7 @@ pub struct VideoBitrate {
 }
 impl_subsonic_for_serde!(VideoBitrate);
 impl_to_query_value_for_display!(VideoBitrate);
+impl_from_query_value_for_parse!(VideoBitrate);
 
 impl VideoBitrate {
     pub fn new(bitrate: u32, size: Option<VideoSize>) -> Self {
@@ -378,7 +383,7 @@ pub enum AudioBitrate {
     /// 192 kbit/s.
     Kbps192,
     /// 224 kbit/s.
-    Kbps224,
+    Kbps224,    
     /// 256 kbit/s.
     Kbps256,
     /// 320 kbit/s.
@@ -388,6 +393,7 @@ pub enum AudioBitrate {
 }
 impl_subsonic_for_serde!(AudioBitrate);
 impl_to_query_value_for_display!(AudioBitrate);
+impl_from_query_value_for_parse!(AudioBitrate);
 
 impl AudioBitrate {
     pub fn new(bitrate: u32) -> Self {
