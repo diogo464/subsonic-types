@@ -14,6 +14,30 @@ pub fn string_to_camel_case(string: &str) -> String {
     result
 }
 
+pub fn type_is_vec(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(syn::TypePath { path, .. }) = ty {
+        if let Some(syn::PathSegment { ident, .. }) = path.segments.last() {
+            ident == "Vec"
+        } else {
+            false
+        }
+    } else {
+        false
+    }
+}
+
+pub fn type_is_option(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(syn::TypePath { path, .. }) = ty {
+        if let Some(syn::PathSegment { ident, .. }) = path.segments.last() {
+            ident == "Option"
+        } else {
+            false
+        }
+    } else {
+        false
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -26,5 +50,17 @@ mod tests {
 
         assert_eq!(string_to_camel_case("foo"), "foo");
         assert_eq!(string_to_camel_case("foo_bar"), "fooBar");
+    }
+
+    #[test]
+    fn test_is_vec() {
+        assert!(type_is_vec(&syn::parse_quote! { Vec<foo::Bar> }));
+        assert!(!type_is_vec(&syn::parse_quote! { foo::Bar }));
+    }
+
+    #[test]
+    fn test_is_option() {
+        assert!(type_is_option(&syn::parse_quote! { Option<foo::Bar> }));
+        assert!(!type_is_option(&syn::parse_quote! { foo::Bar }));
     }
 }

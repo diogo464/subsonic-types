@@ -1,9 +1,3 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Format {
-    Json,
-    Xml,
-}
-
 #[derive(Debug, Clone, Copy)]
 pub struct Version {
     pub major: u8,
@@ -22,6 +16,10 @@ impl Version {
             minor,
             patch,
         })
+    }
+
+    pub fn as_u32(self) -> u32 {
+        ((self.major as u32) << 16) | ((self.minor as u32) << 8) | (self.patch as u32)
     }
 }
 

@@ -74,18 +74,20 @@ impl_subsonic_deserialize!(bool, u8, u16, u32, u64, i8, i16, i32, i64, f32, f64,
 
 impl<'s, T> SubsonicSerialize<'s> for Option<T>
 where
-    T: SubsonicSerialize<'s> + 's,
+    T: SubsonicSerialize<'s, Input = &'s T> + 's,
 {
-    type Input = Option<T::Input>;
+    type Input = &'s Self;
 
     type Output = Option<T::Output>;
 
     fn prepare(input: Self::Input, format: Format, version: Version) -> Self::Output {
-        input.map(|input| T::prepare(input, format, version))
+        input
+            .as_ref()
+            .map(|value| T::prepare(value, format, version))
     }
 }
 
-struct VecOutput<'s, T> {
+pub struct VecOutput<'s, T> {
     data: &'s [T],
     version: Version,
     format: Format,
@@ -118,7 +120,11 @@ where
     type Output = VecOutput<'s, T>;
 
     fn prepare(input: Self::Input, format: Format, version: Version) -> Self::Output {
-        todo!()
+        VecOutput {
+            data: input,
+            version,
+            format,
+        }
     }
 }
 
@@ -181,11 +187,20 @@ where
     where
         D: serde::Deserializer<'de>,
     {
-        #[derive(Clone, Copy)]
         struct Seed<T> {
             format: Format,
             version: Version,
             _phantom: std::marker::PhantomData<T>,
+        }
+
+        impl<T> Clone for Seed<T> {
+            fn clone(&self) -> Self {
+                Seed {
+                    format: self.format,
+                    version: self.version,
+                    _phantom: std::marker::PhantomData,
+                }
+            }
         }
 
         impl<'de, T> serde::de::DeserializeSeed<'de> for Seed<T>
@@ -228,7 +243,7 @@ where
                     _phantom: std::marker::PhantomData,
                 };
                 let mut vec = Vec::new();
-                while let Some(item) = seq.next_element_seed(seed)? {
+                while let Some(item) = seq.next_element_seed(seed.clone())? {
                     vec.push(item);
                 }
                 Ok(vec)

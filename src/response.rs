@@ -51,7 +51,7 @@ impl Response {
     }
 
     pub fn from_json(content: &str) -> Result<Self, crate::SerdeError> {
-        crate::from_json(content)
+        todo!()
     }
 
     pub fn to_xml(&self) -> Result<String, crate::SerdeError> {
@@ -59,7 +59,7 @@ impl Response {
     }
 
     pub fn from_xml(content: &str) -> Result<Self, crate::SerdeError> {
-        crate::from_xml(content)
+        todo!()
     }
 }
 

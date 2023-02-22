@@ -52,16 +52,20 @@ impl From<quick_xml::DeError> for SerdeError {
 /// # }
 /// ```
 pub fn to_json(response: &Response) -> Result<String, SerdeError> {
-    use deser::Json;
+    use deser::SubsonicSerialize;
     use serde::Serialize;
     #[derive(Serialize)]
     struct SubsonicResponse<'a> {
         #[serde(rename = "subsonic-response")]
-        pub subsonic_response: Json<&'a Response>,
+        pub subsonic_response: <Response as SubsonicSerialize<'a>>::Output,
     }
-    let wrapper = Json::new(response);
+    let response_output = <Response as SubsonicSerialize>::prepare(
+        response,
+        deser::Format::Json,
+        common::Version::LATEST,
+    );
     let response = SubsonicResponse {
-        subsonic_response: wrapper,
+        subsonic_response: response_output,
     };
     Ok(serde_json::to_string(&response)?)
 }
@@ -84,14 +88,19 @@ pub fn to_json(response: &Response) -> Result<String, SerdeError> {
 /// # Ok(())
 /// # }
 /// ```
+const _: () = {};
 pub fn to_xml(response: &Response) -> Result<String, SerdeError> {
-    use deser::Xml;
+    use deser::SubsonicSerialize;
     use serde::Serialize;
 
-    let wrapper = Xml::new(response);
+    let response_output = <Response as SubsonicSerialize>::prepare(
+        response,
+        deser::Format::Xml,
+        common::Version::LATEST,
+    );
     let mut buffer = String::default();
     let serializer = quick_xml::se::Serializer::with_root(&mut buffer, Some("subsonic-response"))?;
-    wrapper.serialize(serializer)?;
+    response_output.serialize(serializer)?;
     Ok(buffer)
 }
 
@@ -115,19 +124,20 @@ pub fn to_xml(response: &Response) -> Result<String, SerdeError> {
 /// # Ok(())
 /// # }
 /// ```
-pub fn from_json(json: &str) -> Result<Response, SerdeError> {
-    use deser::Json;
-    use serde::Deserialize;
+const _: () = {};
+// pub fn from_json(json: &str) -> Result<Response, SerdeError> {
+//     use deser::Json;
+//     use serde::Deserialize;
 
-    #[derive(Deserialize)]
-    struct SubsonicResponse {
-        #[serde(rename = "subsonic-response")]
-        subsonic_response: Json<Response>,
-    }
+//     #[derive(Deserialize)]
+//     struct SubsonicResponse {
+//         #[serde(rename = "subsonic-response")]
+//         subsonic_response: Json<Response>,
+//     }
 
-    let response: SubsonicResponse = serde_json::from_str(json)?;
-    Ok(response.subsonic_response.into_inner())
-}
+//     let response: SubsonicResponse = serde_json::from_str(json)?;
+//     Ok(response.subsonic_response.into_inner())
+// }
 
 /// Deserialize a response from xml
 /// ```
@@ -149,9 +159,10 @@ pub fn from_json(json: &str) -> Result<Response, SerdeError> {
 /// # Ok(())
 /// # }
 /// ```
-pub fn from_xml(xml: &str) -> Result<Response, SerdeError> {
-    use deser::Xml;
+const _: () = {};
+// pub fn from_xml(xml: &str) -> Result<Response, SerdeError> {
+//     use deser::Xml;
 
-    let response: Xml<Response> = quick_xml::de::from_str(xml)?;
-    Ok(response.into_inner())
-}
+//     let response: Xml<Response> = quick_xml::de::from_str(xml)?;
+//     Ok(response.into_inner())
+// }

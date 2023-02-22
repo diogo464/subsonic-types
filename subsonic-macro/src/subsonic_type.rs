@@ -1,155 +1,6 @@
 use syn::Result;
 
-use crate::{attr, common::Format, util};
-
-struct Attributes {
-    /// The name to use for the field in the serialized format.
-    /// Translates to `#[serde(rename = "...")]`.
-    rename: Option<String>,
-    /// Is this an xml attribute?
-    /// On the xml side, this translates to `#[serde(rename = "@...")]`.
-    /// On the json side, this is ignored.
-    attribute: bool,
-    /// Is this field an Option<> that should be skipped if it is None?
-    /// If it is then this translates to `#[serde(skip_serializing_if = "crate::deser::is_none")]`.
-    optional: bool,
-    /// Should the field be flattened
-    /// If it is then this translates to `#[serde(flatten)]`.
-    flatten: bool,
-    /// Is this a choice type?
-    /// If it is a choice type and the format is xml then the flatten attribute is applied and the field is renamed to `#[serde(rename="$value")]`.
-    /// In json it is ignored and only the flatten attribute is used.
-    choice: bool,
-    /// Is this an xml value?
-    /// If it is then this translates to `#[serde(rename="$value")]`.
-    /// In json this translates to `#[serde(rename = "value")]`.
-    /// This option is incompatible with the `flatten`, `choice`, `attribute` and `rename` options.
-    value: bool,
-    /// The version since this field was added.
-    /// Right now this is not used.
-    #[allow(unused)]
-    since: String,
-}
-
-impl Attributes {
-    fn extract(attrs: &mut Vec<syn::Attribute>) -> Result<Self> {
-        let metas = attr::extract_meta_list(attrs)?;
-        let mut rename = None;
-        let mut attribute = false;
-        let mut optional = false;
-        let mut flatten = false;
-        let mut choice = false;
-        let mut value = false;
-        let mut since = String::new();
-
-        for meta in metas {
-            match meta {
-                syn::Meta::NameValue(nv) if attr::RENAME == nv.path => {
-                    if let syn::Lit::Str(s) = &nv.lit {
-                        rename = Some(s.value());
-                    }
-                }
-                syn::Meta::Path(p) if attr::ATTRIBUTE == p => {
-                    attribute = true;
-                }
-                syn::Meta::Path(p) if attr::OPTIONAL == p => {
-                    optional = true;
-                }
-                syn::Meta::Path(p) if attr::FLATTEN == p => {
-                    flatten = true;
-                }
-                syn::Meta::Path(p) if attr::CHOICE == p => {
-                    choice = true;
-                }
-                syn::Meta::Path(p) if attr::VALUE == p => {
-                    value = true;
-                }
-                syn::Meta::NameValue(nv) if attr::SINCE == nv.path => {
-                    if let syn::Lit::Str(s) = &nv.lit {
-                        since = s.value();
-                    }
-                }
-                _ => return Err(syn::Error::new_spanned(meta, "Invalid subsonic attribute")),
-            }
-        }
-
-        Ok(Self {
-            rename,
-            attribute,
-            optional,
-            flatten,
-            choice,
-            value,
-            since,
-        })
-    }
-
-    fn apply(&self, format: Format, field: &mut syn::Field) -> Result<()> {
-        let field_name = {
-            let mut base_name = match &self.rename {
-                Some(name) => name.clone(),
-                None => util::string_to_camel_case(
-                    &field
-                        .ident
-                        .as_ref()
-                        .map(|i| i.to_string())
-                        .unwrap_or_default(),
-                ),
-            };
-
-            if format == Format::Xml && self.attribute {
-                base_name.insert(0, '@');
-            }
-
-            base_name
-        };
-
-        if !(self.choice && format == Format::Xml || self.value) {
-            field.attrs.push(syn::parse_quote! {
-                #[serde(rename = #field_name)]
-            });
-        }
-
-        if self.optional {
-            field.attrs.push(syn::parse_quote! {
-                #[serde(skip_serializing_if = "crate::deser::is_none")]
-            });
-        }
-
-        if self.flatten {
-            if self.choice && format == Format::Xml {
-                field.attrs.push(syn::parse_quote! {
-                    #[serde(rename="$value")]
-                });
-            } else {
-                field.attrs.push(syn::parse_quote! {
-                   #[serde(flatten)]
-                });
-            }
-        }
-
-        if self.value {
-            if self.flatten || self.choice || self.attribute || self.rename.is_some() {
-                return Err(syn::Error::new_spanned(
-                    field,
-                    "The value attribute is incompatible with the flatten, choice and attribute attributes",
-                ));
-            }
-
-            if format == Format::Xml {
-                field.attrs.push(syn::parse_quote! {
-                    #[serde(rename="$value")]
-                });
-            } else {
-                field.attrs.push(syn::parse_quote! {
-                    #[serde(rename = "value")]
-                });
-            }
-        }
-
-        Ok(())
-    }
-}
+use crate::{attr, util, version::Format};
 
 fn apply_field_attributes(format: Format, field: &mut syn::Field) -> Result<()> {
     let attrs = Attributes::extract(&mut field.attrs)?;
@@ -310,11 +161,10 @@ impl<'a> SerializeBuilder<'a> {
 
     fn patch_field_types(&self, patched: &mut syn::DeriveInput) {
         let lifetime = self.se_lifetime;
-        let wrapper = serde_wrapper(self.format);
 
         let patch_field = |field: &mut syn::Field| {
             let ty = &mut field.ty;
-            *ty = syn::parse_quote!(#wrapper<&#lifetime #ty>);
+            *ty = syn::parse_quote!(<#ty as crate::deser::SubsonicSerialize<#lifetime>>::Output);
         };
 
         match &mut patched.data {

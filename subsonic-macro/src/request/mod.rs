@@ -1,6 +1,6 @@
 use syn::Result;
 
-use crate::{attr, common::Version, util};
+use crate::{attr, util, version::Version};
 
 struct ContainerAttributes {
     since: Version,
