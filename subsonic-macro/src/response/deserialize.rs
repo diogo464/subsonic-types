@@ -25,7 +25,7 @@ pub fn expand(input: &syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
         super::container::Data::Enum(ref variants) => expand_enum(&context, &container, variants)?,
     };
 
-    Ok(output)
+    Ok(Default::default())
 }
 
 impl Context {

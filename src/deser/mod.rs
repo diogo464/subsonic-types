@@ -11,6 +11,6 @@ pub use error::Error;
 pub use format::Format;
 pub use helper::is_none;
 pub use maybe_serialize::MaybeSerialize;
-pub use traits::{SubsonicDeserialize, SubsonicSerialize};
+pub use traits::{SubsonicDeserialize, SubsonicIntermidiate, SubsonicSerialize, ValidationError};
 pub use versioned::Versioned;
 // pub use wrapper::{Json, Xml};

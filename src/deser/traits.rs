@@ -2,6 +2,8 @@ use crate::common::Version;
 
 use super::Format;
 
+pub struct ValidationError;
+
 pub trait SubsonicSerialize<'s> {
     type Input: 's;
 
@@ -10,10 +12,19 @@ pub trait SubsonicSerialize<'s> {
     fn prepare(input: Self::Input, format: Format, version: Version) -> Self::Output;
 }
 
-pub trait SubsonicDeserialize<'de>: Sized {
-    fn deserialize<D>(format: Format, version: Version, deserializer: D) -> Result<Self, D::Error>
+pub trait SubsonicIntermidiate<'de>: Sized {
+    fn deserialize<D>(format: Format, deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>;
+}
+
+pub trait SubsonicDeserialize<'de>: Sized {
+    type Intermidiate: SubsonicIntermidiate<'de>;
+
+    fn validate(
+        intermidiate: Self::Intermidiate,
+        version: Version,
+    ) -> Result<Self, ValidationError>;
 }
 
 macro_rules! impl_subsonic_serialize_for_copy {
@@ -49,12 +60,23 @@ macro_rules! impl_subsonic_serialize {
 macro_rules! impl_subsonic_deserialize {
     ($($type:ty),*) => {
         $(
-            impl<'de> $crate::deser::SubsonicDeserialize<'de> for $type {
-                fn deserialize<D>(_: $crate::deser::Format, _: $crate::common::Version, deserializer: D) -> Result<Self, D::Error>
+            impl<'de> $crate::deser::SubsonicIntermidiate<'de> for $type {
+                fn deserialize<D>(_: $crate::deser::Format, deserializer: D) -> Result<Self, D::Error>
                 where
                     D: serde::Deserializer<'de>,
                 {
                     <$type as serde::Deserialize<'de>>::deserialize(deserializer)
+                }
+            }
+
+            impl<'de> $crate::deser::SubsonicDeserialize<'de> for $type {
+                type Intermidiate = $type;
+
+                fn validate(
+                    intermidiate: Self::Intermidiate,
+                    _: $crate::common::Version,
+                ) -> Result<Self, $crate::deser::ValidationError> {
+                    Ok(intermidiate)
                 }
             }
         )*
@@ -125,6 +147,23 @@ where
             version,
             format,
         }
+    }
+}
+
+impl<'de, T> SubsonicIntermidiate<'de> for Option<T>
+where
+    T: SubsonicDeserialize<'de>,
+{
+    type Output = Option<T>;
+
+    fn deserialize<D>(format: Format, deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+    }
+
+    fn validate(self, version: Version) -> Result<Self::Output, ValidationError> {
+        todo!()
     }
 }
 

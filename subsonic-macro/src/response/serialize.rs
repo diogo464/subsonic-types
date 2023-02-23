@@ -218,6 +218,11 @@ fn struct_fields_to_ser_fields(
 
 fn struct_field_attrs(format: Format, field: &Field) -> Vec<syn::Attribute> {
     let mut attrs = Vec::new();
+    if field.attrs.since.is_some() {
+        attrs.push(syn::parse_quote! {
+            #[serde(skip_serializing_if = "crate::deser::MaybeSerialize::is_none")]
+        });
+    }
     attrs.push(struct_attr_serde_rename(format, field));
     attrs
 }
