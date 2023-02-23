@@ -34,7 +34,6 @@ pub enum ListType {
     /// Since 1.10.1
     ByGenre,
 }
-impl_subsonic!(ListType);
 impl_to_query_value_for_display!(ListType);
 impl_from_query_value_for_parse!(ListType);
 

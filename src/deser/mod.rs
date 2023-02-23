@@ -1,16 +1,18 @@
-#[macro_use]
-mod traits;
 mod error;
 mod format;
-mod helper;
-mod maybe_serialize;
-mod versioned;
-// mod wrapper;
+mod xml;
 
+pub mod deserialize;
+pub mod serialize;
+
+use std::marker::PhantomData;
+
+pub use deserialize::{Deserialize, Deserializer, SubsonicDeserializer};
 pub use error::Error;
 pub use format::Format;
-pub use helper::is_none;
-pub use maybe_serialize::MaybeSerialize;
-pub use traits::{SubsonicDeserialize, SubsonicIntermidiate, SubsonicSerialize, ValidationError};
-pub use versioned::Versioned;
-// pub use wrapper::{Json, Xml};
+pub use serialize::{Serialize, Serializer, SubsonicSerializer};
+
+pub struct Impossible<Ok, Error> {
+    ok: PhantomData<Ok>,
+    error: PhantomData<Error>,
+}
