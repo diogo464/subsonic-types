@@ -1,7 +1,6 @@
 #![feature(string_extend_from_within)]
 
-#[macro_use]
-pub(crate) mod deser;
+pub(crate) mod obj;
 pub(crate) mod query;
 
 pub mod common;
@@ -169,183 +168,95 @@ const _: () = {};
 
 #[cfg(test)]
 mod tests {
-    use crate::common::Version;
-    use crate::deser::{deserialize::*, serialize::*, Format};
+    use std::collections::BTreeMap;
+
+    use crate::common::{Format, Version};
+    use crate::obj::{Constraint, FromValue, Object, ObjectDecoder, ObjectEncoder, ToValue, Value};
     use crate::response::Genre;
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, Default, PartialEq)]
     struct Foo {
         server: String,
         genre: Genre,
     }
 
-    impl Serialize for Genre {
+    impl ToValue for Genre {
+        fn to_value(&self, format: Format, version: Version) -> crate::obj::Result<Value> {
+            let mut object = Object::default();
+            let mut encoder = ObjectEncoder::new(&mut object, format, version);
+            encoder.encode_attr_with(
+                "songCount",
+                &self.song_count,
+                Constraint::default().with_version(Version::V1_10_2),
+            )?;
+            encoder.encode_attr_with(
+                "albumCount",
+                &self.album_count,
+                Constraint::default().with_version(Version::V1_10_2),
+            )?;
+            encoder.encode_attr("name", &self.name)?;
+            Ok(Value::Object(object))
+        }
+    }
+
+    impl FromValue for Genre {
+        fn from_value(value: Value, format: Format, version: Version) -> crate::obj::Result<Self> {
+            let mut value = value.expect_object()?;
+            let mut decoder = ObjectDecoder::new(&mut value, format, version);
+            let song_count = decoder.decode_attr_with(
+                "songCount",
+                Constraint::default().with_version(Version::V1_10_2),
+            )?;
+            let album_count = decoder.decode_attr_with(
+                "albumCount",
+                Constraint::default().with_version(Version::V1_10_2),
+            )?;
+            let name = decoder.decode_attr("name")?;
+            Ok(Self {
+                song_count,
+                album_count,
+                name,
+            })
+        }
+    }
+
+    impl ToValue for Foo {
+        fn to_value(&self, format: Format, version: Version) -> crate::obj::Result<Value> {
+            let mut object = Object::default();
+            let mut encoder = ObjectEncoder::new(&mut object, format, version);
+            encoder.encode_attr("server", &self.server)?;
+            encoder.encode_attr("genre", &self.genre)?;
+            Ok(Value::Object(object))
+        }
+    }
+
+    impl FromValue for Foo {
+        fn from_value(value: Value, format: Format, version: Version) -> crate::obj::Result<Self> {
+            let mut value = value.expect_object()?;
+            let mut decoder = ObjectDecoder::new(&mut value, format, version);
+            let server = decoder.decode_attr("server")?;
+            let genre = decoder.decode_value("genre")?;
+            Ok(Self { server, genre })
+        }
+    }
+
+    #[derive(serde::Deserialize)]
+    enum Test {
+        Null,
+        Nested(Box<Test>),
+        Map(BTreeMap<String, Test>),
+    }
+
+    impl serde::Serialize for Test {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
-            S: Serializer,
+            S: serde::Serializer,
         {
-            let format = serializer.format();
-            let version = serializer.version();
-            match format {
-                crate::deser::Format::Json => {
-                    let mut map = serializer.serialize_map(Some(3))?;
-                    if version >= Version::V1_10_2 {
-                        map.serialize_entry("songCount", &self.song_count)?;
-                    }
-                    if version >= Version::V1_10_2 {
-                        map.serialize_entry("albumCount", &self.album_count)?;
-                    }
-                    map.serialize_entry("name", &self.name)?;
-                    map.end()
-                }
-                crate::deser::Format::Xml => {
-                    let mut map = serializer.serialize_map(Some(3))?;
-                    if version >= Version::V1_10_2 {
-                        map.serialize_entry("@songCount", &self.song_count)?;
-                    }
-                    if version >= Version::V1_10_2 {
-                        map.serialize_entry("@albumCount", &self.album_count)?;
-                    }
-                    map.serialize_entry("$value", &self.name)?;
-                    map.end()
-                }
+            match self {
+                Test::Null => serializer.serialize_none(),
+                Test::Nested(nested) => nested.serialize(serializer),
+                Test::Map(m) => m.serialize(serializer),
             }
-        }
-    }
-
-    impl Serialize for Foo {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-        {
-            let mut map = serializer.serialize_map(Some(2))?;
-            map.serialize_entry("server", &self.server)?;
-            map.serialize_entry("genre", &self.genre)?;
-            map.end()
-        }
-    }
-
-    impl<'de> Deserialize<'de> for Genre {
-        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            struct V(Format, Version);
-            impl<'de> Visitor<'de> for V {
-                type Value = Genre;
-
-                fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                    formatter.write_str("a genre")
-                }
-
-                fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error>
-                where
-                    A: MapAccess<'de>,
-                {
-                    let format = self.0;
-                    let version = self.1;
-                    let mut map = map;
-
-                    let mut name = None;
-                    let mut song_count = None;
-                    let mut album_count = None;
-
-                    while let Some(key) = map.next_key::<String>()? {
-                        match key.as_str() {
-                            "name" if format == Format::Json => {
-                                name = Some(map.next_value()?);
-                            }
-                            "$text" if format == Format::Xml => {
-                                name = Some(map.next_value()?);
-                            }
-                            "songCount" if format == Format::Json => {
-                                song_count = Some(map.next_value()?);
-                            }
-                            "albumCount" if format == Format::Json => {
-                                album_count = Some(map.next_value()?);
-                            }
-                            "@songCount" if format == Format::Xml => {
-                                song_count = Some(map.next_value()?);
-                            }
-                            "@albumCount" if format == Format::Xml => {
-                                album_count = Some(map.next_value()?);
-                            }
-                            _ => {
-                                eprintln!("unknown key: {}", key);
-                                map.next_value::<serde::de::IgnoredAny>()?;
-                            }
-                        }
-                    }
-
-                    if version < Version::V1_10_2 {
-                        song_count = Some(Default::default());
-                    }
-                    if version < Version::V1_10_2 {
-                        album_count = Some(Default::default());
-                    }
-
-                    Ok(Genre {
-                        name: name.ok_or_else(|| serde::de::Error::missing_field("name"))?,
-                        song_count: song_count
-                            .ok_or_else(|| serde::de::Error::missing_field("songCount"))?,
-                        album_count: album_count
-                            .ok_or_else(|| serde::de::Error::missing_field("albumCount"))?,
-                    })
-                }
-            }
-
-            let visitor = V(deserializer.format(), deserializer.version());
-            deserializer.deserialize_map(visitor)
-        }
-    }
-
-    impl<'de> Deserialize<'de> for Foo {
-        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            struct V(Format, Version);
-            impl<'de> Visitor<'de> for V {
-                type Value = Foo;
-
-                fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                    formatter.write_str("a foo")
-                }
-
-                fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error>
-                where
-                    A: MapAccess<'de>,
-                {
-                    let format = self.0;
-                    let version = self.1;
-                    let mut map = map;
-
-                    let mut server = None;
-                    let mut genre = None;
-
-                    while let Some(key) = map.next_key::<String>()? {
-                        match key.as_str() {
-                            "server" => {
-                                server = Some(map.next_value()?);
-                            }
-                            "genre" => {
-                                genre = Some(map.next_value()?);
-                            }
-                            _ => {
-                                map.next_value::<serde::de::IgnoredAny>()?;
-                            }
-                        }
-                    }
-
-                    Ok(Foo {
-                        server: server.ok_or_else(|| serde::de::Error::missing_field("server"))?,
-                        genre: genre.ok_or_else(|| serde::de::Error::missing_field("genre"))?,
-                    })
-                }
-            }
-
-            let visitor = V(deserializer.format(), deserializer.version());
-            deserializer.deserialize_map(visitor)
         }
     }
 
@@ -362,6 +273,9 @@ mod tests {
             server: "server".to_string(),
             genre,
         };
+
+        let test = Test::Nested(Box::new(Test::Null));
+        eprintln!("test: {}", serde_json::to_string(&test).unwrap());
 
         let json0 = serialize(Format::Json, Version::V1_9_0, &foo);
         let json2 = serialize(Format::Json, Version::V1_10_2, &foo);
@@ -386,13 +300,13 @@ mod tests {
         let foo0 = deserialize::<Foo>(Format::Json, Version::V1_16_0, &json0);
     }
 
-    fn serialize<T: Serialize>(format: Format, version: Version, value: &T) -> String {
+    fn serialize<T: ToValue>(format: Format, version: Version, value: &T) -> String {
         match format {
             Format::Json => {
                 let mut buf = Vec::new();
                 let mut serializer = serde_json::Serializer::new(&mut buf);
-                let serializer = SubsonicSerializer::new(format, version, &mut serializer);
-                value.serialize(serializer).unwrap();
+                let value = value.to_value(format, version).unwrap();
+                serde::Serialize::serialize(&value, &mut serializer).unwrap();
                 String::from_utf8(buf).unwrap()
             }
             Format::Xml => {
@@ -400,28 +314,24 @@ mod tests {
                 let serializer =
                     quick_xml::se::Serializer::with_root(&mut buffer, Some("subsonic-response"))
                         .unwrap();
-                let serializer = SubsonicSerializer::new(format, version, serializer);
-                value.serialize(serializer).unwrap();
+                let value = &value.to_value(format, version).unwrap();
+                serde::Serialize::serialize(value, serializer).unwrap();
                 buffer
             }
         }
     }
 
-    fn deserialize<T: for<'de> Deserialize<'de>>(
-        format: Format,
-        version: Version,
-        content: &str,
-    ) -> T {
+    fn deserialize<T: FromValue>(format: Format, version: Version, content: &str) -> T {
         match format {
             Format::Json => {
                 let mut de = serde_json::Deserializer::from_str(content);
-                let de = SubsonicDeserializer::new(format, version, &mut de);
-                T::deserialize(de).unwrap()
+                let value: Value = serde::Deserialize::deserialize(&mut de).unwrap();
+                T::from_value(value, format, version).unwrap()
             }
             Format::Xml => {
                 let mut de = quick_xml::de::Deserializer::from_str(content);
-                let de = SubsonicDeserializer::new(format, version, &mut de);
-                T::deserialize(de).unwrap()
+                let value: Value = serde::Deserialize::deserialize(&mut de).unwrap();
+                T::from_value(value, format, version).unwrap()
             }
         }
     }

@@ -5,6 +5,12 @@ use time::PrimitiveDateTime;
 
 use crate::{impl_from_query_value_for_parse, impl_to_query_value_for_display};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Format {
+    Json,
+    Xml,
+}
+
 /// A date and time.
 /// Use [`time::PrimitiveDateTime`] to convert to and from [`DateTime`].
 #[derive(Debug, Clone, PartialEq)]
