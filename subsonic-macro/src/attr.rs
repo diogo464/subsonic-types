@@ -53,6 +53,10 @@ pub fn obtain_meta_list(attrs: &[syn::Attribute]) -> Result<Vec<syn::Meta>> {
     extract_named_meta_list("subsonic", &mut attrs.to_vec())
 }
 
+pub fn obtain_named_meta_list(name: &str, attrs: &[syn::Attribute]) -> Result<Vec<syn::Meta>> {
+    extract_named_meta_list(name, &mut attrs.to_vec())
+}
+
 /// Extract subsonic attribute lists and return all nested Meta
 pub fn extract_meta_list(attrs: &mut Vec<syn::Attribute>) -> Result<Vec<syn::Meta>> {
     extract_named_meta_list("subsonic", attrs)

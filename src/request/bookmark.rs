@@ -100,5 +100,47 @@ mod tests {
     }
 
     #[test]
-    fn test_delete_bookmarks() {}
+    fn test_delete_bookmarks() {
+        let request = super::DeleteBookmark {
+            id: "1".to_string(),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!("id=1", query);
+    }
+
+    #[test]
+    fn test_get_play_queue() {
+        let request = super::GetPlayQueue;
+        let query = test_request_encode(&request);
+        assert_eq!("", query);
+    }
+
+    #[test]
+    fn test_save_play_queue() {
+        let request = super::SavePlayQueue {
+            id: vec!["1".to_string(), "2".to_string()],
+            current: Some("1".to_string()),
+            position: Some(Milliseconds::new(1000)),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!("id=1&id=2&current=1&position=1000", query);
+
+        // Test without current
+        let request = super::SavePlayQueue {
+            id: vec!["1".to_string(), "2".to_string()],
+            current: None,
+            position: Some(Milliseconds::new(1000)),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!("id=1&id=2&position=1000", query);
+
+        // Test without position
+        let request = super::SavePlayQueue {
+            id: vec!["1".to_string(), "2".to_string()],
+            current: Some("1".to_string()),
+            position: None,
+        };
+        let query = test_request_encode(&request);
+        assert_eq!("id=1&id=2&current=1", query);
+    }
 }

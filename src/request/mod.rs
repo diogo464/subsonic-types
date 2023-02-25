@@ -1,4 +1,9 @@
-use crate::common::Version;
+use subsonic_macro::{FromQuery, ToQuery};
+
+use crate::{
+    common::Version,
+    query::{self, FromQuery, QueryAccumulator, QueryPair, QueryValueParseError, ToQuery},
+};
 
 /// System methods
 pub mod system;
@@ -56,13 +61,114 @@ pub trait SubsonicRequest:
     const SINCE: Version;
 
     fn to_query(&self) -> String {
-        crate::query::to_query(self)
+        query::to_query(self)
     }
 
-    fn from_query(query: &str) -> Result<Self, crate::query::QueryParseError> {
-        crate::query::from_query(query)
+    fn from_query(query: &str) -> query::Result<Self> {
+        query::from_query(query)
     }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Authentication {
+    Password(String),
+    Token { token: String, salt: String },
+}
+
+#[derive(Debug, Clone, PartialEq, ToQuery, FromQuery)]
+pub struct Request<R: SubsonicRequest> {
+    #[query(rename = "u")]
+    pub username: String,
+    #[query(flatten)]
+    pub authentication: Authentication,
+    #[query(rename = "v")]
+    pub version: Version,
+    #[query(rename = "c")]
+    pub client: String,
+    #[query(rename = "f")]
+    pub format: Option<String>,
+    #[query(flatten)]
+    pub body: R,
+}
+
+impl<R> SubsonicRequest for Request<R>
+where
+    R: SubsonicRequest,
+{
+    const PATH: &'static str = R::PATH;
+
+    const SINCE: Version = R::SINCE;
+}
+
+impl ToQuery for Authentication {
+    fn to_query_builder<B>(&self, builder: &mut B)
+    where
+        B: crate::query::QueryBuilder,
+    {
+        match self {
+            Authentication::Password(p) => builder.emit_key_value("p", p),
+            Authentication::Token { token, salt } => {
+                builder.emit_key_value("t", token);
+                builder.emit_key_value("s", salt);
+            }
+        }
+    }
+}
+
+const _: () = {
+    #[derive(Default)]
+    pub struct AuthenticationAccum {
+        password: Option<String>,
+        token: Option<String>,
+        salt: Option<String>,
+    }
+
+    impl QueryAccumulator for AuthenticationAccum {
+        type Output = Authentication;
+
+        fn consume<'a>(
+            &mut self,
+            pair: crate::query::QueryPair<'a>,
+        ) -> crate::query::Result<crate::query::ConsumeStatus<'a>> {
+            let (key, value) = (pair.key, pair.value);
+            match (key.as_ref(), value) {
+                ("p", Some(p)) => {
+                    self.password = Some(p.to_string());
+                    Ok(crate::query::ConsumeStatus::Consumed)
+                }
+                ("t", Some(t)) => {
+                    self.token = Some(t.to_string());
+                    Ok(crate::query::ConsumeStatus::Consumed)
+                }
+                ("s", Some(s)) => {
+                    self.salt = Some(s.to_string());
+                    Ok(crate::query::ConsumeStatus::Consumed)
+                }
+                (_, v) => Ok(crate::query::ConsumeStatus::Ignored(QueryPair {
+                    key,
+                    value: v,
+                })),
+            }
+        }
+
+        fn finish(self) -> crate::query::Result<Self::Output> {
+            if let (Some(token), Some(salt)) = (self.token, self.salt) {
+                Ok(Authentication::Token { token, salt })
+            } else if let Some(password) = self.password {
+                Ok(Authentication::Password(password))
+            } else {
+                Err(crate::query::QueryParseError::invalid_value(
+                    "p/t/s",
+                    QueryValueParseError::message("one of p, t, s must be present"),
+                ))
+            }
+        }
+    }
+
+    impl FromQuery for Authentication {
+        type QueryAccumulator = AuthenticationAccum;
+    }
+};
 
 #[cfg(test)]
 mod tests {
@@ -82,5 +188,19 @@ mod tests {
         );
         assert_eq!(req, &req2.unwrap(), "query: {}", query);
         query
+    }
+
+    #[test]
+    fn test_ping_request() {
+        let req = Request {
+            username: "user".to_string(),
+            authentication: Authentication::Password("password".to_string()),
+            version: Version::new(1, 16, 1),
+            client: "test".to_string(),
+            format: None,
+            body: system::Ping,
+        };
+        let query = test_request_encode(&req);
+        assert_eq!(query, "u=user&p=password&v=1.16.1&c=test");
     }
 }

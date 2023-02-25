@@ -1,4 +1,5 @@
 use proc_macro2::TokenStream;
+use quote::ToTokens;
 use syn::Result;
 
 use crate::util;
@@ -34,6 +35,7 @@ pub fn expand(input: &syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
 fn expand_struct(container: &Container, fields: &[Field]) -> Result<TokenStream> {
     let container_ident = &container.ident;
 
+    let (impl_t, type_t, where_t) = deserialize_generics(container);
     let key_decls = struct_fields_key_decl(fields);
     let opt_inits = struct_fields_opt_init(fields);
     let match_arms = struct_fields_match_arms(fields);
@@ -86,7 +88,7 @@ fn expand_struct(container: &Container, fields: &[Field]) -> Result<TokenStream>
             }
         }
         impl<'de> serde::de::DeserializeSeed<'de> for Seed {
-            type Value = #container_ident;
+            type Value = #container_ident #type_t;
 
             fn deserialize<D>(self, deserializer: D) -> std::result::Result<Self::Value, D::Error>
             where
@@ -95,10 +97,10 @@ fn expand_struct(container: &Container, fields: &[Field]) -> Result<TokenStream>
                 deserializer.deserialize_map(self)
             }
         }
-        impl<'de> crate::deser::SubsonicDeserialize<'de> for #container_ident {
+        impl #impl_t crate::deser::SubsonicDeserialize<'de> for #container_ident #type_t #where_t {
             type Seed = Seed;
         }
-        impl<'de> serde::Deserialize<'de> for #container_ident {
+        impl #impl_t serde::Deserialize<'de> for #container_ident #type_t #where_t {
             fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
             where
                 D: serde::de::Deserializer<'de>,
@@ -114,6 +116,25 @@ fn expand_struct(container: &Container, fields: &[Field]) -> Result<TokenStream>
         }
     };
     Ok(output)
+}
+
+/// Returns a tuple of (impl, type, where) generics
+fn deserialize_generics(container: &Container) -> (TokenStream, TokenStream, TokenStream) {
+    let mut generics_with_de = container.generics.clone();
+    generics_with_de.params.insert(0, syn::parse_quote!('de));
+    let (impl_de, _, _) = generics_with_de.split_for_impl();
+    let (_, ty_de, where_clause) = container.generics.split_for_impl();
+
+    let mut impl_tokens = TokenStream::new();
+    impl_de.to_tokens(&mut impl_tokens);
+
+    let mut ty_tokens = TokenStream::new();
+    ty_de.to_tokens(&mut ty_tokens);
+
+    let mut where_tokens = TokenStream::new();
+    where_clause.to_tokens(&mut where_tokens);
+
+    (impl_tokens, ty_tokens, where_tokens)
 }
 
 fn struct_fields_option_unwrap(fields: &[Field]) -> Vec<TokenStream> {

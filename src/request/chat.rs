@@ -24,3 +24,32 @@ pub struct AddChatMessage {
     /// The chat message.
     pub message: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::tests::test_request_encode;
+    use super::*;
+
+    #[test]
+    fn test_get_chat_messages() {
+        let request = super::GetChatMessages { since: None };
+        let query = test_request_encode(&request);
+        assert_eq!("", query);
+
+        // Test with since
+        let request = super::GetChatMessages {
+            since: Some(Milliseconds::new(1000)),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!("since=1000", query);
+    }
+
+    #[test]
+    fn test_add_chat_message() {
+        let request = super::AddChatMessage {
+            message: "test".to_string(),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!("message=test", query);
+    }
+}

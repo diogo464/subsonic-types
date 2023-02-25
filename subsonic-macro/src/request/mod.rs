@@ -64,15 +64,17 @@ impl ContainerAttributes {
 
 struct FieldAttributes {
     flatten: bool,
+    rename: Option<String>,
 }
 
 impl FieldAttributes {
     fn obtain(attrs: &Vec<syn::Attribute>) -> Result<Self> {
         let metas = attr::obtain_meta_list(attrs)?;
         let mut flatten = false;
+        let mut rename = None;
 
         for meta in metas {
-            match meta {
+            match &meta {
                 syn::Meta::Path(path) if attr::FLATTEN == path => {
                     if flatten {
                         return Err(syn::Error::new_spanned(path, "Duplicate flatten attribute"));
@@ -80,11 +82,23 @@ impl FieldAttributes {
                         flatten = true;
                     }
                 }
+                syn::Meta::NameValue(
+                    meta @ syn::MetaNameValue {
+                        lit: syn::Lit::Str(value),
+                        ..
+                    },
+                ) if attr::RENAME == meta.path => {
+                    if rename.is_some() {
+                        return Err(syn::Error::new_spanned(meta, "Duplicate attribute"));
+                    } else {
+                        rename = Some(value.value());
+                    }
+                }
                 _ => return Err(syn::Error::new_spanned(meta, "Invalid subsonic attribute")),
             }
         }
 
-        Ok(Self { flatten })
+        Ok(Self { flatten, rename })
     }
 }
 
@@ -99,13 +113,19 @@ fn input_get_data_struct(input: &syn::DeriveInput) -> Result<&syn::DataStruct> {
 }
 
 fn field_get_name_str(field: &syn::Field) -> Result<String> {
-    field
+    let camel_case = field
         .ident
         .as_ref()
         .map(|i| i.to_string())
         .as_deref()
         .map(util::string_to_camel_case)
-        .ok_or_else(|| syn::Error::new_spanned(field, "Field must be named"))
+        .ok_or_else(|| syn::Error::new_spanned(field, "Field must be named"));
+    let attrs = FieldAttributes::obtain(&field.attrs)?;
+    if let Some(rename) = attrs.rename {
+        Ok(rename)
+    } else {
+        camel_case
+    }
 }
 
 fn expand_to_query(input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> {

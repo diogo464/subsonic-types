@@ -117,3 +117,52 @@ pub struct JukeboxControl {
     /// A float value between 0.0 and 1.0.
     pub gain: Option<f32>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::tests::test_request_encode;
+    use super::*;
+
+    #[test]
+    fn test_jukebox_control() {
+        let request = JukeboxControl {
+            action: JukeboxAction::Get,
+            index: None,
+            offset: None,
+            id: vec![],
+            gain: None,
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "action=get");
+
+        let request = JukeboxControl {
+            action: JukeboxAction::Status,
+            index: None,
+            offset: None,
+            id: vec![],
+            gain: None,
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "action=status");
+
+        let request = JukeboxControl {
+            action: JukeboxAction::Set,
+            index: Some(1),
+            offset: Some(20),
+            id: vec!["1".to_string(), "2".to_string()],
+            gain: None,
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "action=set&index=1&offset=20&id=1&id=2");
+
+        let request = JukeboxControl {
+            action: JukeboxAction::Start,
+            index: None,
+            offset: None,
+            id: vec![],
+            gain: Some(13.0),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "action=start&gain=13");
+    }
+}

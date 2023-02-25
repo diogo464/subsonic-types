@@ -677,6 +677,8 @@ pub struct Version {
     pub minor: u8,
     pub patch: u8,
 }
+impl_from_query_value_for_parse!(Version);
+impl_to_query_value_for_display!(Version);
 
 impl Version {
     pub const LATEST: Self = Self::V1_16_1;

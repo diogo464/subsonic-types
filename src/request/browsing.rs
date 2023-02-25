@@ -219,3 +219,188 @@ pub struct GetTopSongs {
 impl GetTopSongs {
     pub const DEFAULT_COUNT: u32 = 50;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::tests::test_request_encode;
+    use super::*;
+
+    #[test]
+    fn test_get_music_folders() {
+        let request = GetMusicFolders;
+        let query = test_request_encode(&request);
+        assert_eq!(query, "");
+    }
+
+    #[test]
+    fn test_get_indexes() {
+        let request = GetIndexes {
+            music_folder_id: None,
+            if_modified_since: None,
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "");
+
+        let request = GetIndexes {
+            music_folder_id: Some("123".to_string()),
+            if_modified_since: Some(Milliseconds::new(123)),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "musicFolderId=123&ifModifiedSince=123");
+    }
+
+    #[test]
+    fn test_get_music_directory() {
+        let request = GetMusicDirectory {
+            id: "123".to_string(),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123");
+    }
+
+    #[test]
+    fn test_get_genres() {
+        let request = GetGenres;
+        let query = test_request_encode(&request);
+        assert_eq!(query, "");
+    }
+
+    #[test]
+    fn tet_get_artists() {
+        let request = GetArtists {
+            music_folder_id: None,
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "");
+
+        let request = GetArtists {
+            music_folder_id: Some(20),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "musicFolderId=20");
+    }
+
+    #[test]
+    fn test_get_artist() {
+        let request = GetArtist {
+            id: "123".to_string(),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123");
+    }
+
+    #[test]
+    fn test_get_album() {
+        let request = GetAlbum {
+            id: "123".to_string(),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123");
+    }
+
+    #[test]
+    fn test_get_song() {
+        let request = GetSong {
+            id: "123".to_string(),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123");
+    }
+
+    #[test]
+    fn test_get_videos() {
+        let request = GetVideos;
+        let query = test_request_encode(&request);
+        assert_eq!(query, "");
+    }
+
+    #[test]
+    fn test_get_video_info() {
+        let request = GetVideoInfo {
+            id: "123".to_string(),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123");
+    }
+
+    #[test]
+    fn test_get_artist_info() {
+        let request = GetArtistInfo {
+            id: "123".to_string(),
+            count: None,
+            include_not_present: None,
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123");
+
+        let request = GetArtistInfo {
+            id: "123".to_string(),
+            count: Some(123),
+            include_not_present: Some(true),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123&count=123&includeNotPresent");
+    }
+
+    #[test]
+    fn test_get_artist_info_2() {
+        let request = GetArtistInfo2 {
+            id: "123".to_string(),
+            count: None,
+            include_not_present: None,
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123");
+
+        let request = GetArtistInfo2 {
+            id: "123".to_string(),
+            count: Some(123),
+            include_not_present: Some(true),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123&count=123&includeNotPresent");
+    }
+
+    #[test]
+    fn test_get_album_info_2() {
+        let request = GetAlbumInfo2 {
+            id: "123".to_string(),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123");
+    }
+
+    #[test]
+    fn test_get_similar_songs() {
+        let request = GetSimilarSongs {
+            id: "123".to_string(),
+            count: None,
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123");
+
+        let request = GetSimilarSongs {
+            id: "123".to_string(),
+            count: Some(123),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123&count=123");
+    }
+
+    #[test]
+    fn test_get_top_songs() {
+        let request = GetTopSongs {
+            id: "123".to_string(),
+            count: None,
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123");
+
+        let request = GetTopSongs {
+            id: "123".to_string(),
+            count: Some(123),
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "id=123&count=123");
+    }
+}

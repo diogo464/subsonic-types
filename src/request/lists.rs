@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 use subsonic_macro::SubsonicRequest;
 
-use crate::{impl_to_query_value_for_display, impl_from_query_value_for_parse};
 #[allow(unused)]
 use crate::request::browsing::{GetGenres, GetMusicFolders};
+use crate::{impl_from_query_value_for_parse, impl_to_query_value_for_display};
 
 #[derive(Debug)]
 pub struct InvalidListType;
@@ -222,4 +222,25 @@ pub struct GetStarred2 {
     /// Since 1.12.0
     /// Only return albums in the music folder with the given ID. See [`GetMusicFolders`].
     pub music_folder_id: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::tests::test_request_encode;
+    use super::*;
+
+    #[test]
+    fn test_get_album_list() {
+        let request = GetAlbumList {
+            list_type: ListType::ByGenre,
+            size: Some(10),
+            offset: Some(0),
+            genre: Some("Rock".to_string()),
+            from_year: None,
+            to_year: None,
+            music_folder_id: None,
+        };
+        let query = test_request_encode(&request);
+        assert_eq!(query, "listType=byGenre&size=10&offset=0&genre=Rock");
+    }
 }
