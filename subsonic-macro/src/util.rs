@@ -20,6 +20,7 @@ pub fn string_to_camel_case(string: &str) -> String {
     result
 }
 
+#[allow(unused)]
 pub fn type_is_vec(ty: &syn::Type) -> bool {
     if let syn::Type::Path(syn::TypePath { path, .. }) = ty {
         if let Some(syn::PathSegment { ident, .. }) = path.segments.last() {
@@ -32,6 +33,7 @@ pub fn type_is_vec(ty: &syn::Type) -> bool {
     }
 }
 
+#[allow(unused)]
 pub fn type_is_option(ty: &syn::Type) -> bool {
     if let syn::Type::Path(syn::TypePath { path, .. }) = ty {
         if let Some(syn::PathSegment { ident, .. }) = path.segments.last() {

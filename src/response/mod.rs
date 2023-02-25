@@ -20,7 +20,7 @@ pub struct Response {
     pub status: ResponseStatus,
     #[subsonic(attribute)]
     pub version: Version,
-    #[subsonic(flatten, choice)]
+    #[subsonic(flatten)]
     pub body: Option<ResponseBody>,
 }
 

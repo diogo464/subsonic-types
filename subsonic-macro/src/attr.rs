@@ -6,7 +6,6 @@ pub const SINCE: AttrName = AttrName::new("since");
 pub const PATH: AttrName = AttrName::new("path");
 pub const ATTRIBUTE: AttrName = AttrName::new("attribute");
 pub const OPTIONAL: AttrName = AttrName::new("optional");
-pub const CHOICE: AttrName = AttrName::new("choice");
 pub const VALUE: AttrName = AttrName::new("value");
 pub const SERDE: AttrName = AttrName::new("serde");
 
@@ -45,14 +44,6 @@ impl std::cmp::PartialEq<&syn::Ident> for AttrName {
 pub fn vec_to_meta(vec: Vec<syn::Attribute>) -> Result<Vec<syn::Meta>> {
     let mut metas = Vec::new();
     for attr in vec {
-        metas.push(attr.parse_meta()?);
-    }
-    Ok(metas)
-}
-
-pub fn slice_to_meta(slice: &[syn::Attribute]) -> Result<Vec<syn::Meta>> {
-    let mut metas = Vec::new();
-    for attr in slice {
         metas.push(attr.parse_meta()?);
     }
     Ok(metas)

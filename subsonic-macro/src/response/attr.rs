@@ -1,9 +1,7 @@
 use syn::Result;
 
 pub use crate::attr::*;
-use crate::{util, version::Version};
-
-use super::format::Format;
+use crate::version::Version;
 
 pub struct ContainerAttr {
     /// This container implements Serialize/Deserialize and the implementation should
@@ -41,10 +39,6 @@ pub struct FieldAttr {
     pub optional: bool,
     /// Should the field be flattened
     pub flatten: bool,
-    /// Is this a choice type?
-    /// If it is a choice type and the format is xml then the flatten attribute is applied and the field is renamed to `#[serde(rename="$value")]`.
-    /// In json it is ignored and only the flatten attribute is used.
-    pub choice: bool,
     /// Is this an xml value?
     /// If it is then this translates to `#[serde(rename="$value")]`.
     /// In json this translates to `#[serde(rename = "value")]`.
@@ -61,7 +55,6 @@ impl FieldAttr {
         let mut attribute = false;
         let mut optional = false;
         let mut flatten = false;
-        let mut choice = false;
         let mut value = false;
         let mut since = None;
 
@@ -80,9 +73,6 @@ impl FieldAttr {
                 }
                 syn::Meta::Path(p) if FLATTEN == p => {
                     flatten = true;
-                }
-                syn::Meta::Path(p) if CHOICE == p => {
-                    choice = true;
                 }
                 syn::Meta::Path(p) if VALUE == p => {
                     value = true;
@@ -103,75 +93,8 @@ impl FieldAttr {
             attribute,
             optional,
             flatten,
-            choice,
             value,
             since,
         })
-    }
-
-    fn apply(&self, format: Format, field: &mut syn::Field) -> Result<()> {
-        let field_name = {
-            let mut base_name = match &self.rename {
-                Some(name) => name.clone(),
-                None => util::string_to_camel_case(
-                    &field
-                        .ident
-                        .as_ref()
-                        .map(|i| i.to_string())
-                        .unwrap_or_default(),
-                ),
-            };
-
-            if format == Format::Xml && self.attribute {
-                base_name.insert(0, '@');
-            }
-
-            base_name
-        };
-
-        if !(self.choice && format == Format::Xml || self.value) {
-            field.attrs.push(syn::parse_quote! {
-                #[serde(rename = #field_name)]
-            });
-        }
-
-        if self.optional {
-            field.attrs.push(syn::parse_quote! {
-                #[serde(skip_serializing_if = "crate::deser::is_none")]
-            });
-        }
-
-        if self.flatten {
-            if self.choice && format == Format::Xml {
-                field.attrs.push(syn::parse_quote! {
-                    #[serde(rename="$value")]
-                });
-            } else {
-                field.attrs.push(syn::parse_quote! {
-                   #[serde(flatten)]
-                });
-            }
-        }
-
-        if self.value {
-            if self.flatten || self.choice || self.attribute || self.rename.is_some() {
-                return Err(syn::Error::new_spanned(
-                    field,
-                    "The value attribute is incompatible with the flatten, choice and attribute attributes",
-                ));
-            }
-
-            if format == Format::Xml {
-                field.attrs.push(syn::parse_quote! {
-                    #[serde(rename="$value")]
-                });
-            } else {
-                field.attrs.push(syn::parse_quote! {
-                    #[serde(rename = "value")]
-                });
-            }
-        }
-
-        Ok(())
     }
 }

@@ -1,7 +1,6 @@
 mod attr;
 mod container;
 mod deserialize;
-mod format;
 mod serialize;
 
 pub fn expand(input: syn::DeriveInput) -> syn::Result<proc_macro2::TokenStream> {

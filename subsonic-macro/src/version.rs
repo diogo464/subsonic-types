@@ -17,10 +17,6 @@ impl Version {
             patch,
         })
     }
-
-    pub fn as_u32(self) -> u32 {
-        ((self.major as u32) << 16) | ((self.minor as u32) << 8) | (self.patch as u32)
-    }
 }
 
 impl quote::ToTokens for Version {

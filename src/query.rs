@@ -210,7 +210,7 @@ impl QueryBuilder for QueryBuilderString {
 mod basic {
     use std::borrow::Cow;
 
-    use super::{QueryPair, QueryParseError, QueryValue, Result};
+    use super::{QueryPair, Result};
 
     pub struct QueryIter<'a> {
         iter: std::str::Split<'a, char>,
@@ -282,21 +282,6 @@ where
     let mut builder = QueryBuilderString::default();
     value.to_query_builder(&mut builder);
     builder.into_query()
-}
-
-macro_rules! impl_to_query_value_for_display {
-    ($($t:ty),*) => {
-        $(
-            impl ToQueryValue for $t {
-                fn to_query_builder<B>(&self, builder: &mut B, encode_as: &str)
-                where
-                    B: QueryBuilder,
-                {
-                    builder.emit(encode_as, Some(self));
-                }
-            }
-        )*
-    };
 }
 
 impl<T> ToQueryValue for &T
@@ -606,12 +591,6 @@ mod tests {
 
     impl FromQuery for Nested {
         type QueryAccumulator = NestedAccumulator;
-    }
-
-    struct Test {
-        field_a: u32,
-        field_b: String,
-        field_c: Nested,
     }
 
     #[test]
