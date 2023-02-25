@@ -8,6 +8,7 @@ pub const ATTRIBUTE: AttrName = AttrName::new("attribute");
 pub const OPTIONAL: AttrName = AttrName::new("optional");
 pub const CHOICE: AttrName = AttrName::new("choice");
 pub const VALUE: AttrName = AttrName::new("value");
+pub const SERDE: AttrName = AttrName::new("serde");
 
 pub struct AttrName(&'static str);
 

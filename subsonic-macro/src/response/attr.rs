@@ -5,6 +5,30 @@ use crate::{util, version::Version};
 
 use super::format::Format;
 
+pub struct ContainerAttr {
+    /// This container implements Serialize/Deserialize and the implementation should
+    /// delegate to those traits.
+    pub serde: bool,
+}
+
+impl ContainerAttr {
+    pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
+        let metas = obtain_meta_list(attrs)?;
+        let mut serde = false;
+
+        for meta in metas {
+            match meta {
+                syn::Meta::Path(p) if SERDE == p => {
+                    serde = true;
+                }
+                _ => {}
+            }
+        }
+
+        Ok(Self { serde })
+    }
+}
+
 pub struct FieldAttr {
     /// The name to use for the field in the serialized format.
     /// Translates to `#[serde(rename = "...")]`.
@@ -14,10 +38,8 @@ pub struct FieldAttr {
     /// On the json side, this is ignored.
     pub attribute: bool,
     /// Is this field an Option<> that should be skipped if it is None?
-    /// If it is then this translates to `#[serde(skip_serializing_if = "crate::deser::is_none")]`.
     pub optional: bool,
     /// Should the field be flattened
-    /// If it is then this translates to `#[serde(flatten)]`.
     pub flatten: bool,
     /// Is this a choice type?
     /// If it is a choice type and the format is xml then the flatten attribute is applied and the field is renamed to `#[serde(rename="$value")]`.
@@ -29,8 +51,6 @@ pub struct FieldAttr {
     /// This option is incompatible with the `flatten`, `choice`, `attribute` and `rename` options.
     pub value: bool,
     /// The version since this field was added.
-    /// Right now this is not used.
-    #[allow(unused)]
     pub since: Option<Version>,
 }
 

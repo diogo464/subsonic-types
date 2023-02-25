@@ -1,6 +1,7 @@
 use std::{str::FromStr, time::Duration};
 
 use serde::{Deserialize, Serialize};
+use subsonic_macro::SubsonicType;
 use time::PrimitiveDateTime;
 
 use crate::{impl_from_query_value_for_parse, impl_to_query_value_for_display};
@@ -13,9 +14,9 @@ pub enum Format {
 
 /// A date and time.
 /// Use [`time::PrimitiveDateTime`] to convert to and from [`DateTime`].
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[subsonic(serde)]
 pub struct DateTime(PrimitiveDateTime);
-//pub struct DateTime(chrono::DateTime<chrono::FixedOffset>);
 impl_to_query_value_for_display!(DateTime);
 impl_from_query_value_for_parse!(DateTime);
 
@@ -86,8 +87,20 @@ impl<'de> Deserialize<'de> for DateTime {
 /// A duration in milliseconds.
 /// When used to represent an instant in time, it is relative to the Unix epoch.
 #[derive(
-    Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+    Debug,
+    Default,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    SubsonicType,
 )]
+#[subsonic(serde)]
 pub struct Milliseconds(u64);
 impl_to_query_value_for_display!(Milliseconds);
 impl_from_query_value_for_parse!(Milliseconds);
@@ -134,7 +147,10 @@ impl FromStr for Milliseconds {
 
 /// A duration in seconds.
 /// When used to represent an instant in time, it is relative to the Unix epoch.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, SubsonicType,
+)]
+#[subsonic(serde)]
 pub struct Seconds(u64);
 impl_to_query_value_for_display!(Seconds);
 impl_from_query_value_for_parse!(Seconds);
@@ -191,7 +207,8 @@ impl std::fmt::Display for InvalidVideoSize {
 impl std::error::Error for InvalidVideoSize {}
 
 /// A video size in pixels containing a width and a height.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, SubsonicType)]
+#[subsonic(serde)]
 pub struct VideoSize {
     pub width: u32,
     pub height: u32,
@@ -276,7 +293,8 @@ impl std::fmt::Display for InvalidVideoBitrate {
 impl std::error::Error for InvalidVideoBitrate {}
 
 /// A video bitrate, in kilobits per second, optionally containing a video size.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, SubsonicType)]
+#[subsonic(serde)]
 pub struct VideoBitrate {
     pub bitrate: u32,
     pub size: Option<VideoSize>,
@@ -357,7 +375,8 @@ impl std::fmt::Display for InvalidAudioBitrate {
 impl std::error::Error for InvalidAudioBitrate {}
 
 /// An audio bitrate in kbit/s.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, SubsonicType)]
+#[subsonic(serde)]
 pub enum AudioBitrate {
     /// No limit.
     NoLimit,
@@ -485,8 +504,9 @@ impl<'de> Deserialize<'de> for AudioBitrate {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, SubsonicType)]
 #[serde(rename_all = "camelCase")]
+#[subsonic(serde)]
 pub enum MediaType {
     Music,
     Podcast,
@@ -505,7 +525,8 @@ impl std::fmt::Display for InvalidUserRating {
 
 impl std::error::Error for InvalidUserRating {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash, SubsonicType)]
+#[subsonic(serde)]
 pub struct UserRating(u32);
 impl_to_query_value_for_display!(UserRating);
 impl_from_query_value_for_parse!(UserRating);
@@ -573,7 +594,8 @@ impl std::fmt::Display for InvalidAverageRating {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, SubsonicType)]
+#[subsonic(serde)]
 pub struct AverageRating(f32);
 
 impl AverageRating {
@@ -648,7 +670,8 @@ impl std::fmt::Display for InvalidVersion {
 impl std::error::Error for InvalidVersion {}
 
 /// An API version.
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SubsonicType)]
+#[subsonic(serde)]
 pub struct Version {
     pub major: u8,
     pub minor: u8,

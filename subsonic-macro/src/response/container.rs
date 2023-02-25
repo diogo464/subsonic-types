@@ -5,6 +5,7 @@ use super::attr;
 pub struct Container<'a> {
     pub ident: &'a syn::Ident,
     pub generics: &'a syn::Generics,
+    pub attrs: attr::ContainerAttr,
     pub data: Data<'a>,
     pub input: &'a syn::DeriveInput,
 }
@@ -29,10 +30,12 @@ impl<'a> Container<'a> {
     pub fn from_input(input: &'a syn::DeriveInput) -> Result<Self> {
         let ident = &input.ident;
         let generics = &input.generics;
+        let attrs = attr::ContainerAttr::from_attrs(&input.attrs)?;
         let data = input_get_data(input)?;
         Ok(Self {
             ident,
             generics,
+            attrs,
             data,
             input,
         })
