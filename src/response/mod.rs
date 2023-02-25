@@ -3,7 +3,7 @@ use subsonic_macro::SubsonicType;
 
 use crate::{
     common::{AverageRating, DateTime, Format, MediaType, Milliseconds, UserRating, Version},
-    deser::{SubsonicDeserialize, SubsonicSerialize},
+    deser::{SubsonicDeserialize, SubsonicSerialize, SubsonicSerializeWrapper},
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, SubsonicType)]
@@ -50,23 +50,83 @@ impl Response {
     }
 
     pub fn to_json(&self) -> Result<String, crate::SerdeError> {
-        todo!()
+        self.to_json_versioned(Version::LATEST)
+    }
+
+    pub fn to_json_versioned(&self, version: Version) -> Result<String, crate::SerdeError> {
+        pub struct SubsonicResponse<'a> {
+            subsonic_response: &'a Response,
+        }
+
+        impl<'a> SubsonicSerialize for SubsonicResponse<'a> {
+            fn serialize<S>(
+                &self,
+                serializer: S,
+                format: Format,
+                version: Version,
+            ) -> Result<S::Ok, S::Error>
+            where
+                S: serde::Serializer,
+            {
+                use serde::ser::SerializeMap;
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry(
+                    "subsonic-response",
+                    &SubsonicSerializeWrapper(self.subsonic_response, format, version),
+                )?;
+                map.end()
+            }
+        }
+
+        let response = SubsonicResponse {
+            subsonic_response: self,
+        };
+        let mut buffer = Vec::new();
+        let mut serializer = serde_json::Serializer::new(&mut buffer);
+        <SubsonicResponse as SubsonicSerialize>::serialize(
+            &response,
+            &mut serializer,
+            Format::Json,
+            version,
+        )?;
+        Ok(String::from_utf8(buffer).unwrap())
     }
 
     pub fn from_json(content: &str) -> Result<Self, crate::SerdeError> {
-        todo!()
+        Self::from_json_versioned(content, Version::LATEST)
+    }
+
+    pub fn from_json_versioned(content: &str, version: Version) -> Result<Self, crate::SerdeError> {
+        #[derive(SubsonicType)]
+        pub struct SubsonicResponse {
+            #[subsonic(rename = "subsonic-response")]
+            subsonic_response: Response,
+        }
+
+        let seed = <SubsonicResponse as SubsonicDeserialize>::Seed::from((Format::Json, version));
+        let mut deserializer = serde_json::Deserializer::from_str(content);
+        let response = serde::de::DeserializeSeed::deserialize(seed, &mut deserializer)?;
+        Ok(response.subsonic_response)
     }
 
     pub fn to_xml(&self) -> Result<String, crate::SerdeError> {
+        self.to_xml_versioned(Version::LATEST)
+    }
+
+    pub fn to_xml_versioned(&self, version: Version) -> Result<String, crate::SerdeError> {
         let mut response = String::new();
         let serializer =
             quick_xml::se::Serializer::with_root(&mut response, Some("subsonic-response"))?;
-        <Self as SubsonicSerialize>::serialize(self, serializer, Format::Xml, Version::LATEST)?;
+        <Self as SubsonicSerialize>::serialize(self, serializer, Format::Xml, version)?;
         Ok(response)
     }
 
     pub fn from_xml(content: &str) -> Result<Self, crate::SerdeError> {
-        let seed = <Self as SubsonicDeserialize>::Seed::from((Format::Xml, Version::LATEST));
+        Self::from_xml_versioned(content, Version::LATEST)
+    }
+
+    pub fn from_xml_versioned(content: &str, version: Version) -> Result<Self, crate::SerdeError> {
+        let seed = <Self as SubsonicDeserialize>::Seed::from((Format::Xml, version));
         let mut deserializer = quick_xml::de::Deserializer::from_str(content);
         let response = serde::de::DeserializeSeed::deserialize(seed, &mut deserializer)?;
         Ok(response)
@@ -1453,9 +1513,6 @@ mod tests {
             }),
         );
         let value = crate::from_xml(xml).unwrap();
-
-        eprintln!("{:#?}", expected);
-        eprintln!("{:#?}", value);
 
         assert_eq!(expected, value);
     }

@@ -7,19 +7,19 @@ use serde::{
 
 use crate::common::Format;
 
-use super::Error;
+use super::{Error, Value};
 
 pub struct FlatMapDeserializer<'de> {
     format: Format,
-    pairs: Vec<(Option<String>, Option<serde_value::Value>)>,
+    pairs: Vec<(Option<String>, Option<Value>)>,
     __phatom: PhantomData<&'de ()>,
 }
 
 impl FlatMapDeserializer<'_> {
-    pub fn new(format: Format, pairs: Vec<(String, serde_value::Value)>) -> Self {
+    pub fn new(format: Format, pairs: Vec<(String, Value)>) -> Self {
         Self {
             format,
-            pairs: dbg!(pairs.into_iter().map(|(k, v)| (Some(k), Some(v))).collect()),
+            pairs: pairs.into_iter().map(|(k, v)| (Some(k), Some(v))).collect(),
             __phatom: PhantomData,
         }
     }
@@ -91,16 +91,16 @@ impl<'de> Deserializer<'de> for FlatMapDeserializer<'de> {
 
 struct FlatMapAccess<'de> {
     format: Format,
-    pairs: Vec<(Option<String>, Option<serde_value::Value>)>,
+    pairs: Vec<(Option<String>, Option<Value>)>,
     index: usize,
     __phatom: PhantomData<&'de ()>,
 }
 
 impl<'de> FlatMapAccess<'de> {
-    fn new(format: Format, pairs: Vec<(Option<String>, Option<serde_value::Value>)>) -> Self {
+    fn new(format: Format, pairs: Vec<(Option<String>, Option<Value>)>) -> Self {
         Self {
             format,
-            pairs: dbg!(pairs),
+            pairs,
             index: 0,
             __phatom: PhantomData,
         }
@@ -116,7 +116,7 @@ impl<'de> MapAccess<'de> for FlatMapAccess<'de> {
     {
         let key = match self.pairs.get_mut(self.index) {
             Some((key, _)) => match key.take() {
-                Some(key) => dbg!(key),
+                Some(key) => key,
                 None => return Err(serde::de::Error::custom("called next key twice in a row")),
             },
             None => return Ok(None),
@@ -177,15 +177,17 @@ impl<'de> Deserializer<'de> for StringDeserializer<'de> {
 
 struct FlatSeqAccess<'de> {
     format: Format,
-    values: Vec<serde_value::Value>,
+    values: Vec<Option<Value>>,
+    index: usize,
     __phatom: PhantomData<&'de ()>,
 }
 
 impl<'de> FlatSeqAccess<'de> {
-    fn new(format: Format, values: Vec<serde_value::Value>) -> Self {
+    fn new(format: Format, values: Vec<Value>) -> Self {
         Self {
             format,
-            values,
+            values: values.into_iter().map(Some).collect(),
+            index: 0,
             __phatom: PhantomData,
         }
     }
@@ -198,10 +200,13 @@ impl<'de> SeqAccess<'de> for FlatSeqAccess<'de> {
     where
         T: DeserializeSeed<'de>,
     {
-        let value = match self.values.pop() {
-            Some(value) => value,
-            None => return Ok(None),
-        };
+        if self.index >= self.values.len() {
+            return Ok(None);
+        }
+        // SAFETY: Value must be Some because we always increment index after removing a value
+        // and they all start as Some.
+        let value = self.values[self.index].take().unwrap();
+        self.index += 1;
         Ok(Some(
             seed.deserialize(ValueDeserializer::new(self.format, value))?,
         ))
@@ -211,12 +216,12 @@ impl<'de> SeqAccess<'de> for FlatSeqAccess<'de> {
 struct FlatEnumAccess<'de> {
     format: Format,
     key: String,
-    value: serde_value::Value,
+    value: Value,
     __phatom: PhantomData<&'de ()>,
 }
 
 impl<'de> FlatEnumAccess<'de> {
-    fn new(format: Format, key: String, value: serde_value::Value) -> Self {
+    fn new(format: Format, key: String, value: Value) -> Self {
         Self {
             format,
             key,
@@ -243,12 +248,12 @@ impl<'de> EnumAccess<'de> for FlatEnumAccess<'de> {
 
 struct ValueDeserializer<'de> {
     format: Format,
-    value: serde_value::Value,
+    value: Value,
     __phantom: PhantomData<&'de ()>,
 }
 
 impl<'de> ValueDeserializer<'de> {
-    fn new(format: Format, value: serde_value::Value) -> Self {
+    fn new(format: Format, value: Value) -> Self {
         Self {
             format,
             value,
@@ -272,26 +277,24 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
         V: Visitor<'de>,
     {
         match self.value {
-            serde_value::Value::Bool(v) => visitor.visit_bool(v),
-            serde_value::Value::String(v) => match v.as_str() {
+            Value::Bool(v) => visitor.visit_bool(v),
+            Value::String(v) => match v.as_str() {
                 "true" | "1" => visitor.visit_bool(true),
                 "false" | "0" => visitor.visit_bool(false),
                 _ => Err(serde::de::Error::custom("invalid boolean")),
             },
-            serde_value::Value::Map(m) if self.format == Format::Xml => {
-                match m.into_iter().next() {
-                    Some((serde_value::Value::String(key), serde_value::Value::String(value)))
-                        if key == "$value" || key == "$text" =>
-                    {
-                        match value.as_str() {
-                            "true" | "1" => visitor.visit_bool(true),
-                            "false" | "0" => visitor.visit_bool(false),
-                            _ => Err(serde::de::Error::custom("invalid boolean")),
-                        }
+            Value::Map(m) if self.format == Format::Xml => match m.into_iter().next() {
+                Some((Value::String(key), Value::String(value)))
+                    if key == "$value" || key == "$text" =>
+                {
+                    match value.as_str() {
+                        "true" | "1" => visitor.visit_bool(true),
+                        "false" | "0" => visitor.visit_bool(false),
+                        _ => Err(serde::de::Error::custom("invalid boolean")),
                     }
-                    _ => return Err(serde::de::Error::custom("expected f64")),
                 }
-            }
+                _ => return Err(serde::de::Error::custom("expected f64")),
+            },
             v => Err(serde::de::Error::custom(format!(
                 "invalid boolean, found {:?}",
                 v
@@ -325,17 +328,17 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
         V: Visitor<'de>,
     {
         let value: i64 = match self.value {
-            serde_value::Value::I8(v) => v as i64,
-            serde_value::Value::I16(v) => v as i64,
-            serde_value::Value::I32(v) => v as i64,
-            serde_value::Value::I64(v) => v,
-            serde_value::Value::U8(v) => v as i64,
-            serde_value::Value::U16(v) => v as i64,
-            serde_value::Value::U32(v) => v as i64,
-            serde_value::Value::U64(v) => i64::try_from(v).map_err(serde::de::Error::custom)?,
-            serde_value::Value::String(v) => v.parse().map_err(serde::de::Error::custom)?,
-            serde_value::Value::Map(m) => match m.into_iter().next() {
-                Some((serde_value::Value::String(key), serde_value::Value::String(value)))
+            Value::I8(v) => v as i64,
+            Value::I16(v) => v as i64,
+            Value::I32(v) => v as i64,
+            Value::I64(v) => v,
+            Value::U8(v) => v as i64,
+            Value::U16(v) => v as i64,
+            Value::U32(v) => v as i64,
+            Value::U64(v) => i64::try_from(v).map_err(serde::de::Error::custom)?,
+            Value::String(v) => v.parse().map_err(serde::de::Error::custom)?,
+            Value::Map(m) => match m.into_iter().next() {
+                Some((Value::String(key), Value::String(value)))
                     if key == "$value" || key == "$text" =>
                 {
                     value.parse().map_err(serde::de::Error::custom)?
@@ -375,27 +378,25 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
         V: Visitor<'de>,
     {
         let value = match self.value {
-            serde_value::Value::I8(v) if v >= 0 => v as u64,
-            serde_value::Value::I16(v) if v >= 0 => v as u64,
-            serde_value::Value::I32(v) if v >= 0 => v as u64,
-            serde_value::Value::I64(v) if v >= 0 => v as u64,
-            serde_value::Value::U8(v) => v as u64,
-            serde_value::Value::U16(v) => v as u64,
-            serde_value::Value::U32(v) => v as u64,
-            serde_value::Value::U64(v) => v,
-            serde_value::Value::String(v) if self.format == Format::Xml => {
+            Value::I8(v) if v >= 0 => v as u64,
+            Value::I16(v) if v >= 0 => v as u64,
+            Value::I32(v) if v >= 0 => v as u64,
+            Value::I64(v) if v >= 0 => v as u64,
+            Value::U8(v) => v as u64,
+            Value::U16(v) => v as u64,
+            Value::U32(v) => v as u64,
+            Value::U64(v) => v,
+            Value::String(v) if self.format == Format::Xml => {
                 v.parse().map_err(serde::de::Error::custom)?
             }
-            serde_value::Value::Map(m) if self.format == Format::Xml => {
-                match m.into_iter().next() {
-                    Some((serde_value::Value::String(key), serde_value::Value::String(value)))
-                        if key == "$value" || key == "$text" =>
-                    {
-                        value.parse().map_err(serde::de::Error::custom)?
-                    }
-                    _ => Err(serde::de::Error::custom("expected unsigned integer"))?,
+            Value::Map(m) if self.format == Format::Xml => match m.into_iter().next() {
+                Some((Value::String(key), Value::String(value)))
+                    if key == "$value" || key == "$text" =>
+                {
+                    value.parse().map_err(serde::de::Error::custom)?
                 }
-            }
+                _ => Err(serde::de::Error::custom("expected unsigned integer"))?,
+            },
             v => Err(serde::de::Error::custom(format!(
                 "expected unsigned integer, found {v:#?}"
             )))?,
@@ -415,29 +416,27 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
         V: Visitor<'de>,
     {
         let value = match self.value {
-            serde_value::Value::I8(v) => v as f64,
-            serde_value::Value::I16(v) => v as f64,
-            serde_value::Value::I32(v) => v as f64,
-            serde_value::Value::I64(v) => v as f64,
-            serde_value::Value::U8(v) => v as f64,
-            serde_value::Value::U16(v) => v as f64,
-            serde_value::Value::U32(v) => v as f64,
-            serde_value::Value::U64(v) => v as f64,
-            serde_value::Value::F32(v) => v as f64,
-            serde_value::Value::F64(v) => v,
-            serde_value::Value::String(v) if self.format == Format::Xml => {
+            Value::I8(v) => v as f64,
+            Value::I16(v) => v as f64,
+            Value::I32(v) => v as f64,
+            Value::I64(v) => v as f64,
+            Value::U8(v) => v as f64,
+            Value::U16(v) => v as f64,
+            Value::U32(v) => v as f64,
+            Value::U64(v) => v as f64,
+            Value::F32(v) => v as f64,
+            Value::F64(v) => v,
+            Value::String(v) if self.format == Format::Xml => {
                 v.parse().map_err(serde::de::Error::custom)?
             }
-            serde_value::Value::Map(m) if self.format == Format::Xml => {
-                match m.into_iter().next() {
-                    Some((serde_value::Value::String(key), serde_value::Value::String(value)))
-                        if key == "$value" || key == "$text" =>
-                    {
-                        value.parse().map_err(serde::de::Error::custom)?
-                    }
-                    _ => return Err(serde::de::Error::custom("expected f64")),
+            Value::Map(m) if self.format == Format::Xml => match m.into_iter().next() {
+                Some((Value::String(key), Value::String(value)))
+                    if key == "$value" || key == "$text" =>
+                {
+                    value.parse().map_err(serde::de::Error::custom)?
                 }
-            }
+                _ => return Err(serde::de::Error::custom("expected f64")),
+            },
             v => {
                 return Err(serde::de::Error::custom(format!(
                     "expected f64, found {v:#?}"
@@ -452,7 +451,7 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
         V: Visitor<'de>,
     {
         match self.value {
-            serde_value::Value::Char(c) => visitor.visit_char(c),
+            Value::Char(c) => visitor.visit_char(c),
             _ => Err(serde::de::Error::custom("expected char")),
         }
     }
@@ -469,29 +468,27 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
         V: Visitor<'de>,
     {
         let string = match self.value {
-            serde_value::Value::Bool(v) if self.format == Format::Xml => v.to_string(),
-            serde_value::Value::U8(v) if self.format == Format::Xml => v.to_string(),
-            serde_value::Value::U16(v) if self.format == Format::Xml => v.to_string(),
-            serde_value::Value::U32(v) if self.format == Format::Xml => v.to_string(),
-            serde_value::Value::U64(v) if self.format == Format::Xml => v.to_string(),
-            serde_value::Value::I8(v) if self.format == Format::Xml => v.to_string(),
-            serde_value::Value::I16(v) if self.format == Format::Xml => v.to_string(),
-            serde_value::Value::I32(v) if self.format == Format::Xml => v.to_string(),
-            serde_value::Value::I64(v) if self.format == Format::Xml => v.to_string(),
-            serde_value::Value::F32(v) if self.format == Format::Xml => v.to_string(),
-            serde_value::Value::F64(v) if self.format == Format::Xml => v.to_string(),
-            serde_value::Value::Char(v) => v.to_string(),
-            serde_value::Value::String(v) => v,
-            serde_value::Value::Map(m) if self.format == Format::Xml => {
-                match m.into_iter().next() {
-                    Some((serde_value::Value::String(key), serde_value::Value::String(value)))
-                        if key == "$value" || key == "$text" =>
-                    {
-                        value
-                    }
-                    _ => return Err(serde::de::Error::custom("expected string")),
+            Value::Bool(v) if self.format == Format::Xml => v.to_string(),
+            Value::U8(v) if self.format == Format::Xml => v.to_string(),
+            Value::U16(v) if self.format == Format::Xml => v.to_string(),
+            Value::U32(v) if self.format == Format::Xml => v.to_string(),
+            Value::U64(v) if self.format == Format::Xml => v.to_string(),
+            Value::I8(v) if self.format == Format::Xml => v.to_string(),
+            Value::I16(v) if self.format == Format::Xml => v.to_string(),
+            Value::I32(v) if self.format == Format::Xml => v.to_string(),
+            Value::I64(v) if self.format == Format::Xml => v.to_string(),
+            Value::F32(v) if self.format == Format::Xml => v.to_string(),
+            Value::F64(v) if self.format == Format::Xml => v.to_string(),
+            Value::Char(v) => v.to_string(),
+            Value::String(v) => v,
+            Value::Map(m) if self.format == Format::Xml => match m.into_iter().next() {
+                Some((Value::String(key), Value::String(value)))
+                    if key == "$value" || key == "$text" =>
+                {
+                    value
                 }
-            }
+                _ => return Err(serde::de::Error::custom("expected string")),
+            },
             v => {
                 return Err(serde::de::Error::custom(format!(
                     "expected string, found {v:#?}"
@@ -556,12 +553,8 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
         V: Visitor<'de>,
     {
         match self.value {
-            serde_value::Value::Seq(array) => {
-                visitor.visit_seq(FlatSeqAccess::new(self.format, array))
-            }
-            v => Err(serde::de::Error::custom(format!(
-                "expected array, foud {v:#?}"
-            ))),
+            Value::Seq(array) => visitor.visit_seq(FlatSeqAccess::new(self.format, array)),
+            v => visitor.visit_seq(FlatSeqAccess::new(self.format, vec![Value::from(v)])),
         }
     }
 
@@ -589,11 +582,11 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
         V: Visitor<'de>,
     {
         match self.value {
-            serde_value::Value::Map(map) => {
+            Value::Map(map) => {
                 let mut pairs = Vec::with_capacity(map.len());
                 for (k, v) in map {
                     let k = match k {
-                        serde_value::Value::String(string) => string,
+                        Value::String(string) => string,
                         _ => return Err(serde::de::Error::custom("invalid key type")),
                     };
                     pairs.push((Some(k), Some(v)));

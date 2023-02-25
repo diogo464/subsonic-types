@@ -71,7 +71,7 @@ fn expand_struct(container: &Container, fields: &[Field]) -> Result<TokenStream>
                     match key {
                         #(#match_arms)*
                         _ => {
-                            buffered.push((key, map.next_value::<serde_value::Value>()?));
+                            buffered.push((key, map.next_value::<crate::deser::Value>()?));
                         }
                     }
                 }
@@ -232,9 +232,13 @@ fn struct_field_key_decl(field: &Field) -> TokenStream {
     };
 
     let key_json = util::string_to_camel_case(&key);
-    let key_xml = match field.attrs.attribute {
-        true => format!("@{}", key_json),
-        false => key_json.clone(),
+    let key_xml = if field.attrs.value {
+        "$text".to_string()
+    } else {
+        match field.attrs.attribute {
+            true => format!("@{}", key_json),
+            false => key_json.clone(),
+        }
     };
 
     quote::quote! {
