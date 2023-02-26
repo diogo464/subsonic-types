@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
-use subsonic_macro::SubsonicRequest;
+use subsonic_macro::{FromQuery, SubsonicRequest, ToQuery};
 
 /// Returns all playlists a user is allowed to play.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getPlaylists>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.0.0", path = "getPlaylists")]
 pub struct GetPlaylists {
@@ -16,7 +16,7 @@ pub struct GetPlaylists {
 /// Returns a listing of files in a saved playlist.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getPlaylist>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.0.0", path = "getPlaylist")]
 pub struct GetPlaylist {
@@ -27,7 +27,7 @@ pub struct GetPlaylist {
 /// Creates (or updates) a playlist.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#createPlaylist>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.2.0", path = "createPlaylist")]
 pub struct CreatePlaylist {
@@ -45,7 +45,7 @@ pub struct CreatePlaylist {
 /// Updates a playlist. Only the owner of a playlist is allowed to update it.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#updatePlaylist>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.8.0", path = "updatePlaylist")]
 pub struct UpdatePlaylist {
@@ -68,7 +68,7 @@ pub struct UpdatePlaylist {
 /// Deletes a saved playlist.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#deletePlaylist>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.2.0", path = "deletePlaylist")]
 pub struct DeletePlaylist {

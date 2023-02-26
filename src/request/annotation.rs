@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use subsonic_macro::SubsonicRequest;
+use subsonic_macro::{FromQuery, SubsonicRequest, ToQuery};
 
 #[allow(unused)]
 use crate::{
@@ -10,7 +10,7 @@ use crate::{
 /// Attaches a star to a song, album or artist.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#star>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.8.0", path = "star")]
 pub struct Star {
@@ -30,7 +30,7 @@ pub struct Star {
 /// Removes the star from a song, album or artist.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#unstar>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.8.0", path = "unstar")]
 pub struct Unstar {
@@ -50,7 +50,7 @@ pub struct Unstar {
 /// Sets the rating for a music file.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#setRating>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.6.0", path = "setRating")]
 pub struct SetRating {
@@ -69,7 +69,7 @@ pub struct SetRating {
 /// Since 1.8.0 you may specify multiple id (and optionally time) parameters to scrobble multiple files.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#scrobble>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.5.0", path = "scrobble")]
 pub struct Scrobble {

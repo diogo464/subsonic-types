@@ -44,6 +44,7 @@ pub struct FieldAttr {
     /// In json this translates to `#[serde(rename = "value")]`.
     /// This option is incompatible with the `flatten`, `choice`, `attribute` and `rename` options.
     pub value: bool,
+    pub choice: bool,
     /// The version since this field was added.
     pub since: Option<Version>,
 }
@@ -56,6 +57,7 @@ impl FieldAttr {
         let mut optional = false;
         let mut flatten = false;
         let mut value = false;
+        let mut choice = false;
         let mut since = None;
 
         for meta in metas {
@@ -77,6 +79,9 @@ impl FieldAttr {
                 syn::Meta::Path(p) if VALUE == p => {
                     value = true;
                 }
+                syn::Meta::Path(p) if CHOICE == p => {
+                    choice = true;
+                }
                 syn::Meta::NameValue(nv) if SINCE == nv.path => {
                     if let syn::Lit::Str(s) = &nv.lit {
                         since = Version::parse(&s.value())
@@ -88,12 +93,20 @@ impl FieldAttr {
             }
         }
 
+        if choice && (flatten || attribute || value || rename.is_some()) {
+            return Err(syn::Error::new(
+                proc_macro2::Span::call_site(),
+                "Choice fields cannot have flatten, attribute, value or rename attributes",
+            ));
+        }
+
         Ok(Self {
             rename,
             attribute,
             optional,
             flatten,
             value,
+            choice,
             since,
         })
     }

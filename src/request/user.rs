@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use subsonic_macro::SubsonicRequest;
+use subsonic_macro::{FromQuery, SubsonicRequest, ToQuery};
 
 use crate::common::AudioBitrate;
 
@@ -7,7 +7,7 @@ use crate::common::AudioBitrate;
 /// Can be used to enable/disable certain features in the client, such as jukebox control.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getUser>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.3.0", path = "getUser")]
 pub struct GetUser {
@@ -20,7 +20,7 @@ pub struct GetUser {
 /// Only users with admin privileges are allowed to call this method.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getUsers>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.8.0", path = "getUsers")]
 pub struct GetUsers;
@@ -28,7 +28,7 @@ pub struct GetUsers;
 /// Creates a new Subsonic user, using the following parameters.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#createUser>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.1.0", path = "createUser")]
 pub struct CreateUser {
@@ -75,7 +75,7 @@ pub struct CreateUser {
 ///  Modifies an existing Subsonic user, using the following parameters.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#updateUser>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.10.1", path = "updateUser")]
 pub struct UpdateUser {
@@ -124,7 +124,7 @@ pub struct UpdateUser {
 /// Deletes an existing Subsonic user, using the following parameters.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#deleteUser>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.3.0", path = "deleteUser")]
 pub struct DeleteUser {
@@ -134,7 +134,7 @@ pub struct DeleteUser {
 
 /// Changes the password of an existing Subsonic user, using the following parameters.
 /// You can only change your own password unless you have admin privileges.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.1.0", path = "changePassword")]
 pub struct ChangePassword {

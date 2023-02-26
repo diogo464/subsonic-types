@@ -202,7 +202,7 @@ fn struct_field_match_arm(field: &Field) -> TokenStream {
     let field_ident = field.ident;
     let key_ident = struct_field_key_ident(field);
     quote::quote! {
-        k if k == #key_ident => {
+        k if k == #key_ident && __vformat == crate::common::Format::Xml => {
             #field_ident = Some(map.next_value_seed(
                 <<#field_ty as crate::deser::SubsonicDeserialize>::Seed as From<(
                     crate::common::Format,

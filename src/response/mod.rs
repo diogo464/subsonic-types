@@ -134,8 +134,9 @@ impl Response {
 }
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug, Clone, PartialEq, SubsonicType)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ResponseBody {
+    Empty,
     MusicFolders(MusicFolders),
     Indexes(Indexes),
     Directory(Directory),
@@ -180,6 +181,93 @@ pub enum ResponseBody {
     ScanStatus(ScanStatus),
     Error(Error),
 }
+
+const _: () = {
+    impl SubsonicSerialize for ResponseBody {
+        fn serialize<S>(
+            &self,
+            serializer: S,
+            format: Format,
+            version: Version,
+        ) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            use serde::ser::SerializeMap;
+            let mut map = serializer.serialize_map(Some(1))?;
+            match self {
+                Self::License(license) => {
+                    map.serialize_entry(
+                        "license",
+                        &SubsonicSerializeWrapper(license, format, version),
+                    )?;
+                }
+                Self::MusicFolders(folders) => {
+                    map.serialize_entry(
+                        "musicFolders",
+                        &SubsonicSerializeWrapper(folders, format, version),
+                    )?;
+                }
+                _ => todo!(),
+            }
+            map.end()
+        }
+    }
+
+    pub struct ResponseBodySeed(Format, Version);
+    impl From<(Format, Version)> for ResponseBodySeed {
+        fn from((format, version): (Format, Version)) -> Self {
+            Self(format, version)
+        }
+    }
+    impl<'de> serde::de::Visitor<'de> for ResponseBodySeed {
+        type Value = ResponseBody;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a subsonic response body")
+        }
+
+        fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+        where
+            A: serde::de::MapAccess<'de>,
+        {
+            while let Some(key) = map.next_key::<String>()? {
+                match dbg!(key.as_str()) {
+                    "license" => {
+                        let license = map.next_value_seed(
+                            <License as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::License(license));
+                    }
+                    "musicFolders" => {
+                        let folders = map.next_value_seed(
+                            <MusicFolders as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::MusicFolders(folders));
+                    }
+                    _ => {
+                        map.next_value::<serde::de::IgnoredAny>()?;
+                    }
+                }
+            }
+            Ok(ResponseBody::Empty)
+        }
+    }
+    impl<'de> serde::de::DeserializeSeed<'de> for ResponseBodySeed {
+        type Value = ResponseBody;
+
+        fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            deserializer.deserialize_map(self)
+        }
+    }
+
+    impl<'de> SubsonicDeserialize<'de> for ResponseBody {
+        type Seed = ResponseBodySeed;
+    }
+};
 
 #[derive(Debug, Default, Clone, PartialEq, SubsonicType)]
 pub struct License {
@@ -946,7 +1034,15 @@ mod tests {
     #[test]
     fn example_ping() {
         let xml = r#"
-            <subsonic-response status="ok" version="1.1.1"> </subsonic-response>
+            <subsonic-response status="ok" version="1.1.1"></subsonic-response>
+        "#;
+
+        let value = crate::from_xml(xml).unwrap();
+        let expected = Response::ok_empty(Version::V1_1_1);
+        assert_eq!(value, expected);
+
+        let xml = r#"
+        <subsonic-response status="ok" version="1.1.1" ignored="xyz"></subsonic-response>
         "#;
 
         let value = crate::from_xml(xml).unwrap();
@@ -972,6 +1068,7 @@ mod tests {
                 ..Default::default()
             }),
         );
+        eprintln!("{}", expected.to_xml().unwrap());
         assert_eq!(value, expected);
     }
 

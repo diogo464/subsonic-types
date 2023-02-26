@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
-use subsonic_macro::SubsonicRequest;
+use subsonic_macro::{FromQuery, SubsonicRequest, ToQuery};
 
 use crate::common::Milliseconds;
 
 /// Returns information about shared media this user is allowed to manage. Takes no extra parameters.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getShares>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.6.0", path = "getShares")]
 pub struct GetShares;
@@ -16,7 +16,7 @@ pub struct GetShares;
 /// Note: The user must be authorized to share (see Settings > Users > User is allowed to share files with anyone).
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#createShare>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.6.0", path = "createShare")]
 pub struct CreateShare {
@@ -32,7 +32,7 @@ pub struct CreateShare {
 /// Updates the description and/or expiration date for an existing share.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#updateShare>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.6.0", path = "updateShare")]
 pub struct UpdateShare {
@@ -47,7 +47,7 @@ pub struct UpdateShare {
 /// Deletes an existing share.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#deleteShare>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.6.0", path = "deleteShare")]
 pub struct DeleteShare {

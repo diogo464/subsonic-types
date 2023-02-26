@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use subsonic_macro::SubsonicRequest;
+use subsonic_macro::{FromQuery, SubsonicRequest, ToQuery};
 
 use crate::common::{VideoBitrate, VideoSize};
 #[allow(unused)]
@@ -8,7 +8,7 @@ use crate::{
     request::browsing::{GetMusicDirectory, GetVideoInfo},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.0.0", path = "getCoverArt")]
 pub struct Stream {
@@ -42,7 +42,7 @@ pub struct Stream {
 /// Similar to [`Stream`], but this method returns the original media data without transcoding or downsampling.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#download>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.0.0", path = "download")]
 pub struct Download {
@@ -57,7 +57,7 @@ pub struct Download {
 /// This method also supports adaptive bitrate streaming, see the bitRate parameter.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#hls>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.8.0", path = "hls")]
 pub struct Hls {
@@ -76,7 +76,7 @@ pub struct Hls {
 /// Returns captions (subtitles) for a video. Use getVideoInfo to get a list of available captions.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getCaptions>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.14.0", path = "getCaptions")]
 pub struct GetCaptions {
@@ -89,7 +89,7 @@ pub struct GetCaptions {
 /// Returns a cover art image.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getCoverArt>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.0.0", path = "getCoverArt")]
 pub struct GetCoverArt {
@@ -102,7 +102,7 @@ pub struct GetCoverArt {
 /// Searches for and returns lyrics for a given song.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getLyrics>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.2.0", path = "getLyrics")]
 pub struct GetLyrics {
@@ -115,7 +115,7 @@ pub struct GetLyrics {
 /// Returns the avatar (personal image) for a user.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getAvatar>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.8.0", path = "getAvatar")]
 pub struct GetAvatar {

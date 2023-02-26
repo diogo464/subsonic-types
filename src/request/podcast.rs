@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
-use subsonic_macro::SubsonicRequest;
+use subsonic_macro::{FromQuery, SubsonicRequest, ToQuery};
 
 /// Returns all Podcast channels the server subscribes to, and (optionally) their episodes.
 /// This method can also be used to return details for only one channel - refer to the id parameter.
 /// A typical use case for this method would be to first retrieve all channels without episodes, and then retrieve all episodes for the single channel the user selects.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getPodcasts>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.6.0", path = "getPodcasts")]
 pub struct GetPodcasts {
@@ -21,7 +21,7 @@ pub struct GetPodcasts {
 /// Returns the most recently published Podcast episodes.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getNewestPodcasts>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.13.0", path = "getNewestPodcasts")]
 pub struct GetNewestPodcasts {
@@ -33,7 +33,7 @@ pub struct GetNewestPodcasts {
 /// Note: The user must be authorized for Podcast administration (see Settings > Users > User is allowed to administrate Podcasts).
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#refreshPodcasts>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.9.0", path = "refreshPodcasts")]
 pub struct RefreshPodcasts;
@@ -42,7 +42,7 @@ pub struct RefreshPodcasts;
 /// Note: The user must be authorized for Podcast administration (see Settings > Users > User is allowed to administrate Podcasts).
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#createPodcastChannel>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.9.0", path = "createPodcastChannel")]
 pub struct CreatePodcastChannel {
@@ -54,7 +54,7 @@ pub struct CreatePodcastChannel {
 /// Note: The user must be authorized for Podcast administration (see Settings > Users > User is allowed to administrate Podcasts).
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#deletePodcastChannel>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.9.0", path = "deletePodcastChannel")]
 pub struct DeletePodcastChannel {
@@ -66,7 +66,7 @@ pub struct DeletePodcastChannel {
 /// Note: The user must be authorized for Podcast administration (see Settings > Users > User is allowed to administrate Podcasts).
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#deletePodcastEpisode>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.9.0", path = "deletePodcastEpisode")]
 pub struct DeletePodcastEpisode {
@@ -78,7 +78,7 @@ pub struct DeletePodcastEpisode {
 /// Note: The user must be authorized for Podcast administration (see Settings > Users > User is allowed to administrate Podcasts).
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#downloadPodcastEpisode>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.9.0", path = "downloadPodcastEpisode")]
 pub struct DownloadPodcastEpisode {

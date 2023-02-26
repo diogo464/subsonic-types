@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
-use subsonic_macro::SubsonicRequest;
+use subsonic_macro::{FromQuery, SubsonicRequest, ToQuery};
 
 ///Returns all internet radio stations. Takes no extra parameters.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getInternetRadioStations>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.9.0", path = "getInternetRadioStations")]
 pub struct GetInternetRadioStations;
@@ -13,7 +13,7 @@ pub struct GetInternetRadioStations;
 /// Only users with admin privileges are allowed to call this method.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#createInternetRadioStation>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.16.0", path = "createInternetRadioStation")]
 pub struct CreateInternetRadioStation {
@@ -29,7 +29,7 @@ pub struct CreateInternetRadioStation {
 /// Only users with admin privileges are allowed to call this method.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#updateInternetRadioStation>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.16.0", path = "updateInternetRadioStation")]
 pub struct UpdateRadioStation {
@@ -47,7 +47,7 @@ pub struct UpdateRadioStation {
 /// Only users with admin privileges are allowed to call this method.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#deleteInternetRadioStation>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.16.0", path = "deleteInternetRadioStation")]
 pub struct DeleteInternetRadioStation {

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use subsonic_macro::SubsonicRequest;
+use subsonic_macro::{FromQuery, SubsonicRequest, ToQuery};
 
 use crate::{impl_from_query_value_for_parse, impl_to_query_value_for_display};
 
@@ -95,7 +95,7 @@ impl<'de> serde::Deserialize<'de> for JukeboxAction {
 /// Note: The user must be authorized to control the jukebox (see Settings > Users > User is allowed to play files in jukebox mode).
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#jukeboxControl>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.2.0", path = "jukeboxControl")]
 pub struct JukeboxControl {

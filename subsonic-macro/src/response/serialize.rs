@@ -125,9 +125,13 @@ fn struct_field_key_decl(field: &Field) -> TokenStream {
     };
 
     let key_json = util::string_to_camel_case(&key);
-    let key_xml = match field.attrs.attribute {
-        true => format!("@{}", key),
-        false => key_json.clone(),
+    let key_xml = if field.attrs.value {
+        "$text".to_string()
+    } else {
+        match field.attrs.attribute {
+            true => format!("@{}", key),
+            false => key_json.clone(),
+        }
     };
 
     quote::quote! {

@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
-use subsonic_macro::SubsonicRequest;
+use subsonic_macro::{FromQuery, SubsonicRequest, ToQuery};
 
 use crate::common::Milliseconds;
 
 /// Returns the current visible (non-expired) chat messages.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getChatMessages>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.2.0", path = "getChatMessages")]
 pub struct GetChatMessages {
@@ -17,7 +17,7 @@ pub struct GetChatMessages {
 /// Adds a message to the chat log.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#addChatMessage>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.2.0", path = "addChatMessage")]
 pub struct AddChatMessage {

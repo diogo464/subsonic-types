@@ -50,6 +50,7 @@ impl<'de> Deserializer<'de> for FlatMapDeserializer<'de> {
         if self.pairs.is_empty() {
             visitor.visit_none()
         } else {
+            eprintln!("visit_some");
             visitor.visit_some(self)
         }
     }
@@ -76,14 +77,17 @@ impl<'de> Deserializer<'de> for FlatMapDeserializer<'de> {
     fn deserialize_enum<V>(
         mut self,
         _name: &'static str,
-        _variants: &'static [&'static str],
+        variants: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'de>,
     {
+        eprintln!("deserialize_enum");
         match self.pairs.pop() {
-            Some((Some(k), Some(v))) => visitor.visit_enum(FlatEnumAccess::new(self.format, k, v)),
+            Some((Some(k), Some(v))) if variants.contains(&k.as_str()) => {
+                visitor.visit_enum(FlatEnumAccess::new(self.format, k, v))
+            }
             _ => visitor.visit_unit(),
         }
     }

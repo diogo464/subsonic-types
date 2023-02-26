@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
-use subsonic_macro::SubsonicRequest;
+use subsonic_macro::{FromQuery, SubsonicRequest, ToQuery};
 
 use crate::common::Milliseconds;
 
 /// Returns all bookmarks for this user. A bookmark is a position within a certain media file.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getBookmarks>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.9.0", path = "getBookmarks")]
 pub struct GetBookmarks;
@@ -14,7 +14,7 @@ pub struct GetBookmarks;
 /// Creates or updates a bookmark (a position within a media file). Bookmarks are personal and not visible to other users.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#createBookmark>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.9.0", path = "createBookmark")]
 pub struct CreateBookmark {
@@ -30,7 +30,7 @@ pub struct CreateBookmark {
 /// Deletes the bookmark for a given file.
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#deleteBookmark>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.9.0", path = "deleteBookmark")]
 pub struct DeleteBookmark {
@@ -44,7 +44,7 @@ pub struct DeleteBookmark {
 /// Typically used to allow a user to move between different clients/apps while retaining the same play queue (for instance when listening to an audio book).
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#getPlayQueue>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.12.0", path = "getPlayQueue")]
 pub struct GetPlayQueue;
@@ -54,7 +54,7 @@ pub struct GetPlayQueue;
 /// Typically used to allow a user to move between different clients/apps while retaining the same play queue (for instance when listening to an audio book).
 ///
 /// For more information, see <http://www.subsonic.org/pages/api.jsp#savePlayQueue>
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, SubsonicRequest)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.12.0", path = "savePlayQueue")]
 pub struct SavePlayQueue {
