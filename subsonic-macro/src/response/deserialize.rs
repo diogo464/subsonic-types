@@ -202,7 +202,7 @@ fn struct_field_match_arm(field: &Field) -> TokenStream {
     let field_ident = field.ident;
     let key_ident = struct_field_key_ident(field);
     quote::quote! {
-        k if k == #key_ident && __vformat == crate::common::Format::Xml => {
+        k if k == #key_ident => {
             #field_ident = Some(map.next_value_seed(
                 <<#field_ty as crate::deser::SubsonicDeserialize>::Seed as From<(
                     crate::common::Format,
@@ -247,19 +247,26 @@ fn struct_field_key_decl(field: &Field) -> TokenStream {
     }
 
     let key_ident = struct_field_key_ident(field);
-    let key = match field.attrs.rename {
-        Some(ref key) => key.clone(),
-        None => field.ident.to_string(),
-    };
-
-    let key_json = util::string_to_camel_case(&key);
-    let key_xml = if field.attrs.value {
-        "$text".to_string()
+    let (key_json, key_xml) = if let Some(ref rename) = field.attrs.rename {
+        let key_json = rename.clone();
+        let key_xml = if field.attrs.attribute {
+            format!("@{}", key_json)
+        } else {
+            key_json.clone()
+        };
+        (key_json, key_xml)
     } else {
-        match field.attrs.attribute {
-            true => format!("@{}", key_json),
-            false => key_json.clone(),
-        }
+        let key = field.ident.to_string();
+        let key_json = util::string_to_camel_case(&key);
+        let key_xml = if field.attrs.value {
+            "$text".to_string()
+        } else {
+            match field.attrs.attribute {
+                true => format!("@{}", key_json),
+                false => key_json.clone(),
+            }
+        };
+        (key_json, key_xml)
     };
 
     quote::quote! {
@@ -276,12 +283,11 @@ fn struct_field_key_ident(field: &Field) -> syn::Ident {
 
 fn expand_enum(container: &Container, variants: &[Variant]) -> Result<TokenStream> {
     let container_ident = &container.ident;
-    let variant_idents = variants.iter().map(|v| v.ident);
     let variant_names = variants
         .iter()
         .map(|v| util::string_to_camel_case(&v.ident.to_string()))
         .collect::<Vec<_>>();
-    let variant_types = variants.iter().map(|v| v.ty);
+    let match_arms = enum_variants_match_arm(container, variants);
 
     let output = quote::quote! {
         pub struct Seed(crate::common::Format, crate::common::Version);
@@ -297,31 +303,19 @@ fn expand_enum(container: &Container, variants: &[Variant]) -> Result<TokenStrea
                 formatter.write_str(std::stringify!(#container_ident))
             }
 
-            fn visit_enum<A>(self, data: A) -> std::result::Result<Self::Value, A::Error>
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
             where
-                A: serde::de::EnumAccess<'de>,
+                A: serde::de::MapAccess<'de>
             {
-                use serde::de::VariantAccess;
-                let __vformat = self.0;
-                let __version = self.1;
-
-                let (variant, access) = data.variant::<String>()?;
-                match variant.as_str() {
-                    #(
-                        #variant_names => {
-                            let __v = access.newtype_variant_seed(
-                                <<#variant_types as crate::deser::SubsonicDeserialize>::Seed as From<(
-                                    crate::common::Format,
-                                    crate::common::Version,
-                                )>>::from((__vformat, __version))
-                            )?;
-                            Ok(#container_ident::#variant_idents(__v))
+                while let Some(key) = map.next_key::<String>()? {
+                    match key.as_str() {
+                        #(#match_arms)*
+                        _ => {
+                            map.next_value::<serde::de::IgnoredAny>()?;
                         }
-                    )*
-                    _ => Err(serde::de::Error::unknown_variant(&variant, &[
-                        #(#variant_names),*
-                    ])),
+                    }
                 }
+                Ok(#container_ident::Empty)
             }
         }
         impl<'de> serde::de::DeserializeSeed<'de> for Seed {
@@ -346,4 +340,29 @@ fn expand_enum(container: &Container, variants: &[Variant]) -> Result<TokenStrea
         }
     };
     Ok(output)
+}
+
+fn enum_variants_match_arm(container: &Container, variants: &[Variant]) -> Vec<TokenStream> {
+    variants
+        .iter()
+        .map(|variant| enum_variant_match_arm(container, variant))
+        .collect()
+}
+
+fn enum_variant_match_arm(container: &Container, variant: &Variant) -> TokenStream {
+    let container_ident = container.ident;
+    let variant_ident = variant.ident;
+    let variant_name = util::string_to_camel_case(&variant_ident.to_string());
+    let variant_ty = variant.ty;
+    quote::quote! {
+        #variant_name => {
+            let __v = map.next_value_seed(
+                <<#variant_ty as crate::deser::SubsonicDeserialize>::Seed as From<(
+                    crate::common::Format,
+                    crate::common::Version,
+                )>>::from((self.0, self.1))
+            )?;
+            return Ok(#container_ident::#variant_ident(__v));
+        }
+    }
 }

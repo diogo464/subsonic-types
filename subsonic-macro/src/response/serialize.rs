@@ -85,7 +85,7 @@ fn struct_field_serialize_entry(field: &Field) -> TokenStream {
         Some(ref since) => quote::quote! { version >= #since },
         None => quote::quote! { true },
     };
-    if field.attrs.flatten {
+    let output = if field.attrs.flatten {
         quote::quote! {
             <#field_ty as crate::deser::SubsonicSerialize>::serialize(
                 &self.#field_ident,
@@ -103,6 +103,15 @@ fn struct_field_serialize_entry(field: &Field) -> TokenStream {
                 )?;
             }
         }
+    };
+    if field.attrs.optional {
+        quote::quote! {
+            if  self.#field_ident.is_some() {
+                #output
+            }
+        }
+    } else {
+        output
     }
 }
 

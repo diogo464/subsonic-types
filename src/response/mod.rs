@@ -21,7 +21,7 @@ pub struct Response {
     #[subsonic(attribute)]
     pub version: Version,
     #[subsonic(flatten)]
-    pub body: Option<ResponseBody>,
+    pub body: ResponseBody,
 }
 
 impl Response {
@@ -29,7 +29,7 @@ impl Response {
         Self {
             status: ResponseStatus::Ok,
             version,
-            body: Some(body),
+            body: body,
         }
     }
 
@@ -37,7 +37,7 @@ impl Response {
         Self {
             status: ResponseStatus::Ok,
             version,
-            body: None,
+            body: ResponseBody::Empty,
         }
     }
 
@@ -45,7 +45,7 @@ impl Response {
         Self {
             status: ResponseStatus::Failed,
             version,
-            body: Some(ResponseBody::Error(error)),
+            body: ResponseBody::Error(error),
         }
     }
 
@@ -196,19 +196,211 @@ const _: () = {
             use serde::ser::SerializeMap;
             let mut map = serializer.serialize_map(Some(1))?;
             match self {
-                Self::License(license) => {
-                    map.serialize_entry(
-                        "license",
-                        &SubsonicSerializeWrapper(license, format, version),
-                    )?;
-                }
-                Self::MusicFolders(folders) => {
+                ResponseBody::Empty => {}
+                ResponseBody::MusicFolders(v) => {
                     map.serialize_entry(
                         "musicFolders",
-                        &SubsonicSerializeWrapper(folders, format, version),
+                        &SubsonicSerializeWrapper(v, format, version),
                     )?;
                 }
-                _ => todo!(),
+                ResponseBody::Indexes(v) => {
+                    map.serialize_entry("indexes", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::Directory(v) => {
+                    map.serialize_entry(
+                        "directory",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::Genres(v) => {
+                    map.serialize_entry("genres", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::Artists(v) => {
+                    map.serialize_entry("artists", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::Artist(v) => {
+                    map.serialize_entry("artist", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::Album(v) => {
+                    map.serialize_entry("album", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::Song(v) => {
+                    map.serialize_entry("song", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::Videos(v) => {
+                    map.serialize_entry("videos", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::VideoInfo(v) => {
+                    map.serialize_entry(
+                        "videoInfo",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::NowPlaying(v) => {
+                    map.serialize_entry(
+                        "nowPlaying",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::SearchResult(v) => {
+                    map.serialize_entry(
+                        "searchResult2",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::SearchResult2(v) => {
+                    map.serialize_entry(
+                        "searchResult2",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::SearchResult3(v) => {
+                    map.serialize_entry(
+                        "searchResult3",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::Playlists(v) => {
+                    map.serialize_entry(
+                        "playlists",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::Playlist(v) => {
+                    map.serialize_entry("playlist", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::JukeboxStatus(v) => {
+                    map.serialize_entry(
+                        "jukeboxStatus",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::JukeboxPlaylist(v) => {
+                    map.serialize_entry(
+                        "jukeboxPlaylist",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::License(v) => {
+                    map.serialize_entry("license", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::Users(v) => {
+                    map.serialize_entry("users", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::User(v) => {
+                    map.serialize_entry("user", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::ChatMessages(v) => {
+                    map.serialize_entry(
+                        "chatMessages",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::AlbumList(v) => {
+                    map.serialize_entry(
+                        "albumList",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::AlbumList2(v) => {
+                    map.serialize_entry(
+                        "albumList2",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::RandomSongs(v) => {
+                    map.serialize_entry(
+                        "randomSongs",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::SongsByGenre(v) => {
+                    map.serialize_entry(
+                        "songsByGenre",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::Lyrics(v) => {
+                    map.serialize_entry("lyrics", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::Podcasts(v) => {
+                    map.serialize_entry("podcasts", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::NewestPodcasts(v) => {
+                    map.serialize_entry(
+                        "newestPodcasts",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::InternetRadioStations(v) => {
+                    map.serialize_entry(
+                        "internetRadioStations",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::Bookmarks(v) => {
+                    map.serialize_entry(
+                        "bookmarks",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::PlayQueue(v) => {
+                    map.serialize_entry(
+                        "playQueue",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::Shares(v) => {
+                    map.serialize_entry("shares", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::Starred(v) => {
+                    map.serialize_entry("starred", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::Starred2(v) => {
+                    map.serialize_entry("starred2", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::AlbumInfo(v) => {
+                    map.serialize_entry(
+                        "albumInfo",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::ArtistInfo(v) => {
+                    map.serialize_entry(
+                        "artistInfo",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::ArtistInfo2(v) => {
+                    map.serialize_entry(
+                        "artistInfo2",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::SimilarSongs(v) => {
+                    map.serialize_entry(
+                        "similarSongs",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::SimilarSongs2(v) => {
+                    map.serialize_entry(
+                        "similarSongs2",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::TopSongs(v) => {
+                    map.serialize_entry("topSongs", &SubsonicSerializeWrapper(v, format, version))?;
+                }
+                ResponseBody::ScanStatus(v) => {
+                    map.serialize_entry(
+                        "scanStatus",
+                        &SubsonicSerializeWrapper(v, format, version),
+                    )?;
+                }
+                ResponseBody::Error(v) => {
+                    map.serialize_entry("error", &SubsonicSerializeWrapper(v, format, version))?;
+                }
             }
             map.end()
         }
@@ -233,17 +425,269 @@ const _: () = {
         {
             while let Some(key) = map.next_key::<String>()? {
                 match dbg!(key.as_str()) {
+                    "musicFolders" => {
+                        let folders = map.next_value_seed(
+                            <MusicFolders as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::MusicFolders(folders));
+                    }
+                    "indexes" => {
+                        let indexes = map.next_value_seed(
+                            <Indexes as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Indexes(indexes));
+                    }
+                    "directory" => {
+                        let directory = map.next_value_seed(
+                            <Directory as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Directory(directory));
+                    }
+                    "genres" => {
+                        let genres = map.next_value_seed(
+                            <Genres as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Genres(genres));
+                    }
+                    "artists" => {
+                        let artists = map.next_value_seed(
+                            <ArtistsID3 as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Artists(artists));
+                    }
+                    "artist" => {
+                        let artist = map.next_value_seed(
+                            <ArtistWithAlbumsID3 as SubsonicDeserialize>::Seed::from((
+                                self.0, self.1,
+                            )),
+                        )?;
+                        return Ok(ResponseBody::Artist(artist));
+                    }
+                    "album" => {
+                        let album = map.next_value_seed(
+                            <AlbumWithSongsID3 as SubsonicDeserialize>::Seed::from((
+                                self.0, self.1,
+                            )),
+                        )?;
+                        return Ok(ResponseBody::Album(album));
+                    }
+                    "song" => {
+                        let song = map.next_value_seed(
+                            <Child as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Song(song));
+                    }
+                    "videos" => {
+                        let videos = map.next_value_seed(
+                            <Videos as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Videos(videos));
+                    }
+                    "videoInfo" => {
+                        let video_info = map.next_value_seed(
+                            <VideoInfo as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::VideoInfo(video_info));
+                    }
+                    "nowPlaying" => {
+                        let now_playing = map.next_value_seed(
+                            <NowPlaying as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::NowPlaying(now_playing));
+                    }
+                    "searchResult" => {
+                        let search_result = map.next_value_seed(
+                            <SearchResult as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::SearchResult(search_result));
+                    }
+                    "searchResult2" => {
+                        let search_result = map.next_value_seed(
+                            <SearchResult2 as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::SearchResult2(search_result));
+                    }
+                    "searchResult3" => {
+                        let search_result = map.next_value_seed(
+                            <SearchResult3 as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::SearchResult3(search_result));
+                    }
+                    "playlists" => {
+                        let playlists = map.next_value_seed(
+                            <Playlists as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Playlists(playlists));
+                    }
+                    "playlist" => {
+                        let playlist = map.next_value_seed(
+                            <Playlist as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Playlist(playlist));
+                    }
+                    "jukeboxStatus" => {
+                        let jukebox_status = map.next_value_seed(
+                            <JukeboxStatus as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::JukeboxStatus(jukebox_status));
+                    }
+                    "jukeboxPlaylist" => {
+                        let jukebox_playlist = map.next_value_seed(
+                            <JukeboxPlaylist as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::JukeboxPlaylist(jukebox_playlist));
+                    }
                     "license" => {
                         let license = map.next_value_seed(
                             <License as SubsonicDeserialize>::Seed::from((self.0, self.1)),
                         )?;
                         return Ok(ResponseBody::License(license));
                     }
-                    "musicFolders" => {
-                        let folders = map.next_value_seed(
-                            <MusicFolders as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                    "users" => {
+                        let users = map.next_value_seed(
+                            <Users as SubsonicDeserialize>::Seed::from((self.0, self.1)),
                         )?;
-                        return Ok(ResponseBody::MusicFolders(folders));
+                        return Ok(ResponseBody::Users(users));
+                    }
+                    "user" => {
+                        let user = map.next_value_seed(
+                            <User as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::User(user));
+                    }
+                    "chatMessages" => {
+                        let chat_messages = map.next_value_seed(
+                            <ChatMessages as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::ChatMessages(chat_messages));
+                    }
+                    "albumList" => {
+                        let album_list = map.next_value_seed(
+                            <AlbumList as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::AlbumList(album_list));
+                    }
+                    "albumList2" => {
+                        let album_list = map.next_value_seed(
+                            <AlbumList2 as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::AlbumList2(album_list));
+                    }
+                    "randomSongs" => {
+                        let random_songs = map.next_value_seed(
+                            <Songs as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::RandomSongs(random_songs));
+                    }
+                    "songsByGenre" => {
+                        let songs_by_genre = map.next_value_seed(
+                            <Songs as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::SongsByGenre(songs_by_genre));
+                    }
+                    "lyrics" => {
+                        let lyrics = map.next_value_seed(
+                            <Lyrics as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Lyrics(lyrics));
+                    }
+                    "podcasts" => {
+                        let podcasts = map.next_value_seed(
+                            <Podcasts as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Podcasts(podcasts));
+                    }
+                    "newestPodcasts" => {
+                        let podcasts = map.next_value_seed(
+                            <NewestPodcasts as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::NewestPodcasts(podcasts));
+                    }
+                    "internetRadioStations" => {
+                        let stations = map.next_value_seed(
+                            <InternetRadioStations as SubsonicDeserialize>::Seed::from((
+                                self.0, self.1,
+                            )),
+                        )?;
+                        return Ok(ResponseBody::InternetRadioStations(stations));
+                    }
+                    "bookmarks" => {
+                        let bookmarks = map.next_value_seed(
+                            <Bookmarks as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Bookmarks(bookmarks));
+                    }
+                    "playQueue" => {
+                        let play_queue = map.next_value_seed(
+                            <PlayQueue as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::PlayQueue(play_queue));
+                    }
+                    "shares" => {
+                        let shares = map.next_value_seed(
+                            <Shares as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Shares(shares));
+                    }
+                    "starred" => {
+                        let starred = map.next_value_seed(
+                            <Starred as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Starred(starred));
+                    }
+                    "starred2" => {
+                        let starred = map.next_value_seed(
+                            <Starred2 as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Starred2(starred));
+                    }
+                    "albumInfo" => {
+                        let album_info = map.next_value_seed(
+                            <AlbumInfo as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::AlbumInfo(album_info));
+                    }
+                    "artistInfo" => {
+                        let artist_info = map.next_value_seed(
+                            <ArtistInfo as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::ArtistInfo(artist_info));
+                    }
+                    "artistInfo2" => {
+                        let artist_info = map.next_value_seed(
+                            <ArtistInfo2 as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::ArtistInfo2(artist_info));
+                    }
+                    "similarSongs" => {
+                        let similar_songs = map.next_value_seed(
+                            <SimilarSongs as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::SimilarSongs(similar_songs));
+                    }
+                    "similarSongs2" => {
+                        let similar_songs = map.next_value_seed(
+                            <SimilarSongs2 as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::SimilarSongs2(similar_songs));
+                    }
+                    "topSongs" => {
+                        let top_songs = map.next_value_seed(
+                            <TopSongs as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::TopSongs(top_songs));
+                    }
+                    "scanStatus" => {
+                        let scan_status = map.next_value_seed(
+                            <ScanStatus as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::ScanStatus(scan_status));
+                    }
+                    "error" => {
+                        let error = map.next_value_seed(
+                            <Error as SubsonicDeserialize>::Seed::from((self.0, self.1)),
+                        )?;
+                        return Ok(ResponseBody::Error(error));
                     }
                     _ => {
                         map.next_value::<serde::de::IgnoredAny>()?;

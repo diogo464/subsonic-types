@@ -67,15 +67,19 @@ fn data_struct_to_data(data: &syn::DataStruct) -> Result<Data> {
     Ok(Data::Struct(fields))
 }
 
+/// Zero-field variants are ignored.
 fn data_enum_to_data(data: &syn::DataEnum) -> Result<Data> {
     let mut variants = Vec::with_capacity(data.variants.len());
 
     for variant in data.variants.iter() {
-        if variant.fields.len() != 1 {
+        if variant.fields.len() > 1 {
             return Err(syn::Error::new_spanned(
                 variant,
-                "Only single-field variants are supported",
+                "Only single-field or zero-field variants are supported",
             ));
+        }
+        if variant.fields.is_empty() {
+            continue;
         }
 
         let ty = match variant.fields.iter().next() {
