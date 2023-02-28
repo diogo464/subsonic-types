@@ -493,6 +493,7 @@ impl FromQueryValue for bool {
 }
 
 #[macro_export]
+#[doc(hidden)]
 macro_rules! impl_from_query_value_for_parse {
         ($($t:ty),*) => {
             $(
@@ -504,6 +505,7 @@ macro_rules! impl_from_query_value_for_parse {
     }
 
 #[macro_export]
+#[doc(hidden)]
 macro_rules! impl_to_query_value_for_display {
     ($($t:ty),*) => {
         $(

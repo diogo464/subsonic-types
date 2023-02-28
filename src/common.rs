@@ -1,3 +1,5 @@
+//! Module for Subsonic API common types.
+
 use std::{str::FromStr, time::Duration};
 
 use serde::{Deserialize, Serialize};
@@ -6,10 +8,44 @@ use time::{OffsetDateTime, PrimitiveDateTime};
 
 use crate::{impl_from_query_value_for_parse, impl_to_query_value_for_display};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug)]
+pub struct InvalidFormat;
+
+impl std::fmt::Display for InvalidFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Invalid format")
+    }
+}
+
+impl std::error::Error for InvalidFormat {}
+
+/// A serialization format for the responses. `jsonp` is not supported.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum Format {
     Json,
     Xml,
+}
+
+impl std::fmt::Display for Format {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Format::Json => write!(f, "json"),
+            Format::Xml => write!(f, "xml"),
+        }
+    }
+}
+
+impl FromStr for Format {
+    type Err = InvalidFormat;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "json" => Ok(Format::Json),
+            "xml" => Ok(Format::Xml),
+            _ => Err(InvalidFormat),
+        }
+    }
 }
 
 /// A date and time.
@@ -563,6 +599,7 @@ impl std::fmt::Display for InvalidUserRating {
 
 impl std::error::Error for InvalidUserRating {}
 
+/// A user rating. It is an integer between 1 and 5.
 #[derive(Debug, Clone, Copy, PartialEq, Hash, SubsonicType)]
 #[subsonic(serde)]
 pub struct UserRating(u32);
@@ -632,6 +669,8 @@ impl std::fmt::Display for InvalidAverageRating {
     }
 }
 
+impl std::error::Error for InvalidAverageRating {}
+/// An average rating. It is a float between 1.0 and 5.0.
 #[derive(Debug, Clone, Copy, PartialEq, SubsonicType)]
 #[subsonic(serde)]
 pub struct AverageRating(f32);

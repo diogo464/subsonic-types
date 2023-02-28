@@ -1,4 +1,4 @@
-//! Modified version of https://github.com/arcnmx/serde-value to deserialize maps with multiple equal keys into sequences instead of overwriting the previous value.
+//! Modified version of <https://github.com/arcnmx/serde-value> to deserialize maps with multiple equal keys into sequences instead of overwriting the previous value.
 
 use std::{
     cmp::Ordering,

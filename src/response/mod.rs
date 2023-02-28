@@ -1,3 +1,47 @@
+//! Module for Subsonic API responses.
+//!
+//! # Example
+//! Building a response:
+//! ```
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     use subsonic_types::{common::Version, response::{Response, ResponseBody, License}};
+//!     let response = Response::ok(
+//!         Version::V1_16_1,
+//!         ResponseBody::License(License {
+//!             valid: true,
+//!             ..Default::default()
+//!         }),
+//!     );
+//!     assert_eq!(
+//!         r#"{"subsonic-response":{"status":"ok","version":"1.16.1","license":{"valid":true}}}"#,
+//!         Response::to_json(&response)?
+//!     );
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! Parsing a response:
+//! Deserialize a response from json
+//! ```
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     use subsonic_types::{common::Version, response::{Response, ResponseBody, License}};
+//!     let response = Response::ok(
+//!         Version::V1_16_1,
+//!         ResponseBody::License(License {
+//!             valid: true,
+//!             ..Default::default()
+//!         }),
+//!     );
+//!     let serialized = r#"{"subsonic-response":{"status":"ok","version":"1.16.1","license":{"valid":true}}}"#;
+//!     let deserialized = Response::from_json(serialized)?;
+//!     assert_eq!(
+//!         response,
+//!         deserialized
+//!     );
+//! # Ok(())
+//! # }
+//! ```
+
 use serde::{Deserialize, Serialize};
 use subsonic_macro::SubsonicType;
 
@@ -51,11 +95,30 @@ impl Response {
         }
     }
 
-    pub fn to_json(&self) -> Result<String, crate::SerdeError> {
+    /// Serialize a response to json
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     use subsonic_types::{common::Version, response::{Response, ResponseBody, License}};
+    ///     let response = Response::ok(
+    ///         Version::V1_16_1,
+    ///         ResponseBody::License(License {
+    ///             valid: true,
+    ///             ..Default::default()
+    ///         }),
+    ///     );
+    ///     assert_eq!(
+    ///         r#"{"subsonic-response":{"status":"ok","version":"1.16.1","license":{"valid":true}}}"#,
+    ///         Response::to_json(&response)?
+    ///     );
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn to_json(&self) -> Result<String, Error> {
         self.to_json_versioned(Version::LATEST)
     }
 
-    pub fn to_json_versioned(&self, version: Version) -> Result<String, crate::SerdeError> {
+    /// Same as [`Response::to_json`] but allows specifying the api version.
+    pub fn to_json_versioned(&self, version: Version) -> Result<String, Error> {
         pub struct SubsonicResponse<'a> {
             subsonic_response: &'a Response,
         }
@@ -90,15 +153,37 @@ impl Response {
             &mut serializer,
             Format::Json,
             version,
-        )?;
+        )
+        .map_err(Error::custom)?;
         Ok(String::from_utf8(buffer).unwrap())
     }
 
-    pub fn from_json(content: &str) -> Result<Self, crate::SerdeError> {
+    /// Deserialize a response from json
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     use subsonic_types::{common::Version, response::{Response, ResponseBody, License}};
+    ///     let response = Response::ok(
+    ///         Version::V1_16_1,
+    ///         ResponseBody::License(License {
+    ///             valid: true,
+    ///             ..Default::default()
+    ///         }),
+    ///     );
+    ///     let serialized = r#"{"subsonic-response":{"status":"ok","version":"1.16.1","license":{"valid":true}}}"#;
+    ///     let deserialized = Response::from_json(serialized)?;
+    ///     assert_eq!(
+    ///         response,
+    ///         deserialized
+    ///     );
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn from_json(content: &str) -> Result<Self, Error> {
         Self::from_json_versioned(content, Version::LATEST)
     }
 
-    pub fn from_json_versioned(content: &str, version: Version) -> Result<Self, crate::SerdeError> {
+    /// Same as [`Response::from_json`] but allows specifying the api version.
+    pub fn from_json_versioned(content: &str, version: Version) -> Result<Self, Error> {
         #[derive(SubsonicType)]
         pub struct SubsonicResponse {
             #[subsonic(rename = "subsonic-response")]
@@ -107,30 +192,74 @@ impl Response {
 
         let seed = <SubsonicResponse as SubsonicDeserialize>::Seed::from((Format::Json, version));
         let mut deserializer = serde_json::Deserializer::from_str(content);
-        let response = serde::de::DeserializeSeed::deserialize(seed, &mut deserializer)?;
+        let response = serde::de::DeserializeSeed::deserialize(seed, &mut deserializer)
+            .map_err(Error::custom)?;
         Ok(response.subsonic_response)
     }
 
-    pub fn to_xml(&self) -> Result<String, crate::SerdeError> {
+    /// Serialize a response to xml
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     use subsonic_types::{common::Version, response::{Response, ResponseBody, License}};
+    ///     let response = Response::ok(
+    ///         Version::V1_16_1,
+    ///         ResponseBody::License(License {
+    ///             valid: true,
+    ///             ..Default::default()
+    ///         }),
+    ///     );
+    ///     assert_eq!(
+    ///         r#"<subsonic-response status="ok" version="1.16.1"><license valid="true"/></subsonic-response>"#,
+    ///         Response::to_xml(&response)?
+    ///     );
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn to_xml(&self) -> Result<String, Error> {
         self.to_xml_versioned(Version::LATEST)
     }
 
-    pub fn to_xml_versioned(&self, version: Version) -> Result<String, crate::SerdeError> {
+    /// Same as [`Response::to_xml`] but allows specifying the api version.
+    pub fn to_xml_versioned(&self, version: Version) -> Result<String, Error> {
         let mut response = String::new();
         let serializer =
-            quick_xml::se::Serializer::with_root(&mut response, Some("subsonic-response"))?;
-        <Self as SubsonicSerialize>::serialize(self, serializer, Format::Xml, version)?;
+            quick_xml::se::Serializer::with_root(&mut response, Some("subsonic-response"))
+                .map_err(Error::custom)?;
+        <Self as SubsonicSerialize>::serialize(self, serializer, Format::Xml, version)
+            .map_err(Error::custom)?;
         Ok(response)
     }
 
-    pub fn from_xml(content: &str) -> Result<Self, crate::SerdeError> {
+    /// Deserialize a response from xml
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     use subsonic_types::{common::Version, response::{Response, ResponseBody, License}};
+    ///     let response = Response::ok(
+    ///         Version::V1_16_1,
+    ///         ResponseBody::License(License {
+    ///             valid: true,
+    ///             ..Default::default()
+    ///         }),
+    ///     );
+    ///     let serialized = r#"<subsonic-response status="ok" version="1.16.1"><license valid="true"/></subsonic-response>"#;
+    ///     let deserialized = Response::from_xml(serialized)?;
+    ///     assert_eq!(
+    ///         response,
+    ///         deserialized
+    ///     );
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn from_xml(content: &str) -> Result<Self, Error> {
         Self::from_xml_versioned(content, Version::LATEST)
     }
 
-    pub fn from_xml_versioned(content: &str, version: Version) -> Result<Self, crate::SerdeError> {
+    /// Same as [`Response::from_xml`] but allows specifying the api version.
+    pub fn from_xml_versioned(content: &str, version: Version) -> Result<Self, Error> {
         let seed = <Self as SubsonicDeserialize>::Seed::from((Format::Xml, version));
         let mut deserializer = quick_xml::de::Deserializer::from_str(content);
-        let response = serde::de::DeserializeSeed::deserialize(seed, &mut deserializer)?;
+        let response = serde::de::DeserializeSeed::deserialize(seed, &mut deserializer)
+            .map_err(Error::custom)?;
         Ok(response)
     }
 }
@@ -1395,6 +1524,18 @@ pub struct Error {
     pub message: Option<String>,
 }
 
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", u32::from(self.code))?;
+        if let Some(message) = &self.message {
+            write!(f, ": {}", message)?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for Error {}
+
 impl Error {
     pub fn new(code: ErrorCode) -> Self {
         Error {
@@ -1409,7 +1550,45 @@ impl Error {
             message: Some(message.into()),
         }
     }
+
+    pub fn custom(err: impl std::error::Error) -> Self {
+        Error {
+            code: ErrorCode::Generic,
+            message: Some(err.to_string()),
+        }
+    }
+
+    pub fn custom_with_code(code: ErrorCode, err: impl std::error::Error) -> Self {
+        Error {
+            code,
+            message: Some(err.to_string()),
+        }
+    }
 }
+
+macro_rules! error_impl_from {
+    ($($t:ty),*) => {
+        $(
+            impl From<$t> for Error {
+                fn from(err: $t) -> Self {
+                    Error::custom(err)
+                }
+            }
+        )*
+    };
+}
+error_impl_from!(
+    crate::common::InvalidFormat,
+    crate::common::InvalidVersion,
+    crate::request::lists::InvalidListType,
+    crate::common::InvalidVideoSize,
+    crate::common::InvalidUserRating,
+    crate::common::InvalidAudioBitrate,
+    crate::common::InvalidVideoBitrate,
+    crate::common::InvalidAverageRating,
+    crate::request::jukebox::InvalidJukeboxAction,
+    crate::query::QueryParseError
+);
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, SubsonicType)]
 #[repr(u32)]
@@ -1485,7 +1664,7 @@ mod tests {
             <subsonic-response status="ok" version="1.1.1"></subsonic-response>
         "#;
 
-        let value = crate::from_xml(xml).unwrap();
+        let value = Response::from_xml(xml).unwrap();
         let expected = Response::ok_empty(Version::V1_1_1);
         assert_eq!(value, expected);
 
@@ -1493,7 +1672,7 @@ mod tests {
         <subsonic-response status="ok" version="1.1.1" ignored="xyz"></subsonic-response>
         "#;
 
-        let value = crate::from_xml(xml).unwrap();
+        let value = Response::from_xml(xml).unwrap();
         let expected = Response::ok_empty(Version::V1_1_1);
         assert_eq!(value, expected);
     }
@@ -1506,7 +1685,7 @@ mod tests {
         </subsonic-response>
         "#;
 
-        let value = crate::from_xml(xml).unwrap();
+        let value = Response::from_xml(xml).unwrap();
         let expected = Response::ok(
             Version::V1_13_0,
             ResponseBody::License(License {
@@ -1532,7 +1711,7 @@ mod tests {
         </subsonic-response>
         "#;
 
-        let value = crate::from_xml(xml).unwrap();
+        let value = Response::from_xml(xml).unwrap();
         let expected = Response::ok(
             Version::V1_1_1,
             ResponseBody::MusicFolders(MusicFolders {
@@ -1576,7 +1755,7 @@ mod tests {
         </subsonic-response>
         "#;
 
-        let value = crate::from_xml(xml).unwrap();
+        let value = Response::from_xml(xml).unwrap();
         let expected = Response::ok(
             Version::new(1, 10, 1),
             ResponseBody::Indexes(Indexes {
@@ -1683,7 +1862,7 @@ mod tests {
         </subsonic-response>
         "#;
 
-        let value = crate::from_xml(xml).unwrap();
+        let value = Response::from_xml(xml).unwrap();
         let expected = Response::ok(
             Version::new(1, 10, 1),
             ResponseBody::Directory(Directory {
@@ -1728,7 +1907,7 @@ mod tests {
         </subsonic-response>
         "#;
 
-        let value = crate::from_xml(xml).unwrap();
+        let value = Response::from_xml(xml).unwrap();
         let expected = Response::ok(
             Version::new(1, 4, 0),
             ResponseBody::Directory(Directory {
@@ -1803,7 +1982,7 @@ mod tests {
             </subsonic-response>
             "#;
 
-        let value = crate::from_xml(xml).unwrap();
+        let value = Response::from_xml(xml).unwrap();
         let expected = Response::ok(
             Version::new(1, 10, 2),
             ResponseBody::Genres(Genres {
@@ -1868,7 +2047,7 @@ mod tests {
         </subsonic-response>
         "#;
 
-        let value = crate::from_xml(xml).unwrap();
+        let value = Response::from_xml(xml).unwrap();
         let expected = Response::ok(
             Version::new(1, 10, 1),
             ResponseBody::Artists(ArtistsID3 {
@@ -1982,7 +2161,6 @@ mod tests {
                         artist_id: Some("5432".into()),
                         ..Default::default()
                     },
-                    // <album id="11050" name="Flick Of The Switch" coverArt="al-11050" songCount="10" created="2004-11-27T19:22:51" duration="2222" artist="AC/DC" artistId="5432"/>
                     AlbumID3 {
                         id: "11050".into(),
                         name: "Flick Of The Switch".into(),
@@ -1994,7 +2172,6 @@ mod tests {
                         artist_id: Some("5432".into()),
                         ..Default::default()
                     },
-                    // <album id="11051" name="Fly On The Wall" coverArt="al-11051" songCount="10" created="2004-11-27T19:22:57" duration="2405" artist="AC/DC" artistId="5432"/>
                     AlbumID3 {
                         id: "11051".into(),
                         name: "Fly On The Wall".into(),
@@ -2006,7 +2183,6 @@ mod tests {
                         artist_id: Some("5432".into()),
                         ..Default::default()
                     },
-                    // <album id="11052" name="For Those About To Rock" coverArt="al-11052" songCount="10" created="2004-11-08T23:35:02" duration="2403" artist="AC/DC" artistId="5432"/>
                     AlbumID3 {
                         id: "11052".into(),
                         name: "For Those About To Rock".into(),
@@ -2018,7 +2194,6 @@ mod tests {
                         artist_id: Some("5432".into()),
                         ..Default::default()
                     },
-                    // <album id="11053" name="High Voltage" coverArt="al-11053" songCount="8" created="2004-11-27T20:23:32" duration="2414" artist="AC/DC" artistId="5432"/>
                     AlbumID3 {
                         id: "11053".into(),
                         name: "High Voltage".into(),
@@ -2030,7 +2205,6 @@ mod tests {
                         artist_id: Some("5432".into()),
                         ..Default::default()
                     },
-                    // <album id="10489" name="Highway To Hell" coverArt="al-10489" songCount="12" created="2009-06-15T09:41:54" duration="2745" artist="AC/DC" artistId="5432"/>
                     AlbumID3 {
                         id: "10489".into(),
                         name: "Highway To Hell".into(),
@@ -2042,7 +2216,6 @@ mod tests {
                         artist_id: Some("5432".into()),
                         ..Default::default()
                     },
-                    // <album id="11054" name="If You Want Blood..." coverArt="al-11054" songCount="1" created="2004-11-27T20:23:32" duration="304" artist="AC/DC" artistId="5432"/>
                     AlbumID3 {
                         id: "11054".into(),
                         name: "If You Want Blood...".into(),
@@ -2057,7 +2230,7 @@ mod tests {
                 ],
             }),
         );
-        let value = crate::from_xml(xml).unwrap();
+        let value = Response::from_xml(xml).unwrap();
 
         assert_eq!(expected, value);
     }

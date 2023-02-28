@@ -1,3 +1,55 @@
+//! Module for Subsonic API requests.
+//!
+//! # Example
+//! Building the request to get a song by ID:
+//!
+//! ```rust
+//! # fn main() {
+//!     use subsonic_types::{
+//!         common::{Version, Format},
+//!         request::{Request, SubsonicRequest, browsing::GetSong, Authentication}
+//!     };
+//!
+//!     let request = Request {
+//!         username: "admin".into(),
+//!         authentication: Authentication::Password("admin".into()),
+//!         version: Version::LATEST,
+//!         client: "Rust Example".into(),
+//!         format: Some(Format::Json.to_string()),
+//!         body: GetSong {
+//!             id: "123".into(),
+//!        },
+//!     };
+//!
+//!     let query = request.to_query();
+//!     assert_eq!("u=admin&p=admin&v=1.16.1&c=Rust%20Example&f=json&id=123", query);
+//! # }
+//! ```
+//! 
+//! Parsing a request:
+//! ```rust
+//! # fn main() {
+//!     use subsonic_types::{
+//!         common::{Version, Format},
+//!         request::{Request, SubsonicRequest, browsing::GetSong, Authentication}
+//!     };
+//!
+//!     let query = "u=admin&p=admin&v=1.16.1&c=Rust%20Example&f=json&id=123";
+//!     let request: Request<GetSong> = Request::from_query(query).unwrap();
+//!     let expected = Request {
+//!         username: "admin".into(),
+//!         authentication: Authentication::Password("admin".into()),
+//!         version: Version::LATEST,
+//!         client: "Rust Example".into(),
+//!         format: Some(Format::Json.to_string()),
+//!         body: GetSong {
+//!             id: "123".into(),
+//!        },
+//!     };
+//!     assert_eq!(expected, request);
+//! # }
+//! ```
+
 use subsonic_macro::{FromQuery, ToQuery};
 
 use crate::{
@@ -50,6 +102,26 @@ pub mod bookmark;
 /// Media library scanning methods
 pub mod scan;
 
+/// Trait for Subsonic API requests
+/// ```rust
+/// # fn main() {
+///     use subsonic_types::request::SubsonicRequest;
+///
+///     assert_eq!("/rest/getArtistInfo", subsonic_types::request::browsing::GetArtistInfo::PATH);
+///     assert_eq!(subsonic_types::common::Version::V1_11_0, subsonic_types::request::browsing::GetArtistInfo::SINCE);
+///
+///     let request = subsonic_types::request::browsing::GetArtistInfo {
+///         id: "123".into(),
+///         count: Some(10),
+///         include_not_present: Some(true),
+///     };
+///     let query = request.to_query();
+///     assert_eq!("id=123&count=10&includeNotPresent", query);
+///     
+///     let parsed = subsonic_types::request::browsing::GetArtistInfo::from_query(&query).unwrap();
+///     assert_eq!(request, parsed);
+/// # }
+/// ```
 pub trait SubsonicRequest:
     crate::query::ToQuery
     + crate::query::FromQuery
