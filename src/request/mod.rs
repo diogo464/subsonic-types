@@ -50,7 +50,7 @@
 //! # }
 //! ```
 
-use subsonic_macro::{FromQuery, ToQuery};
+use subsonic_types_macro::{FromQuery, ToQuery};
 
 use crate::{
     common::Version,

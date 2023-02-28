@@ -12,7 +12,7 @@ keywords = ["subsonic", "music", "api", "types"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-subsonic-macro = { version = "0.0.0", path = "./subsonic-macro" }
+subsonic-types-macro = { version = "0.0.0", path = "./subsonic-types-macro" }
 time = { version = "0.3", features = [
     "parsing",
     "macros",

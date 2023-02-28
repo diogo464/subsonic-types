@@ -1,7 +1,7 @@
 //! System requests.
 
 use serde::{Deserialize, Serialize};
-use subsonic_macro::{FromQuery, SubsonicRequest, ToQuery};
+use subsonic_types_macro::{FromQuery, SubsonicRequest, ToQuery};
 
 /// <http://www.subsonic.org/pages/api.jsp#ping>
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]

@@ -43,7 +43,7 @@
 //! ```
 
 use serde::{Deserialize, Serialize};
-use subsonic_macro::SubsonicType;
+use subsonic_types_macro::SubsonicType;
 
 use crate::{
     common::{

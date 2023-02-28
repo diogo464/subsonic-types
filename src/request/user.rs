@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use subsonic_macro::{FromQuery, SubsonicRequest, ToQuery};
+use subsonic_types_macro::{FromQuery, SubsonicRequest, ToQuery};
 
 use crate::common::AudioBitrate;
 

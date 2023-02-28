@@ -3,7 +3,7 @@
 use std::{str::FromStr, time::Duration};
 
 use serde::{Deserialize, Serialize};
-use subsonic_macro::SubsonicType;
+use subsonic_types_macro::SubsonicType;
 use time::{OffsetDateTime, PrimitiveDateTime};
 
 use crate::{impl_from_query_value_for_parse, impl_to_query_value_for_display};
