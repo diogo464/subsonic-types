@@ -5,7 +5,7 @@ edition = "2021"
 description = "Internal macros for subsonic-types"
 homepage = "https://github.com/diogo464/subsonic-types"
 repository = "https://github.com/diogo464/subsonic-types"
-
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
