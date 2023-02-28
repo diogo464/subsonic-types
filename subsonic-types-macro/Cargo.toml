@@ -2,6 +2,10 @@
 name = "subsonic-types-macro"
 version = "0.0.0"
 edition = "2021"
+description = "Internal macros for subsonic-types"
+homepage = "https://github.com/diogo464/subsonic-types"
+repository = "https://github.com/diogo464/subsonic-types"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -9,6 +13,6 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "1.0.51"
-quote = "1.0.23"
-syn = { version = "1.0.107", features = ["parsing", "printing", "extra-traits"] }
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "1", features = ["parsing", "printing", "extra-traits"] }
