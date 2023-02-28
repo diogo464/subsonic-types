@@ -273,7 +273,32 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        self.deserialize_string(visitor)
+        match self.value {
+            Value::Bool(v) => visitor.visit_bool(v),
+            Value::U8(v) => visitor.visit_u8(v),
+            Value::U16(v) => visitor.visit_u16(v),
+            Value::U32(v) => visitor.visit_u32(v),
+            Value::U64(v) => visitor.visit_u64(v),
+            Value::I8(v) => visitor.visit_i8(v),
+            Value::I16(v) => visitor.visit_i16(v),
+            Value::I32(v) => visitor.visit_i32(v),
+            Value::I64(v) => visitor.visit_i64(v),
+            Value::F32(v) => visitor.visit_f32(v),
+            Value::F64(v) => visitor.visit_f64(v),
+            Value::Char(v) => visitor.visit_char(v),
+            Value::String(v) => visitor.visit_string(v),
+            Value::Unit => visitor.visit_unit(),
+            Value::Option(v) => match v {
+                Some(v) => visitor.visit_some(ValueDeserializer::new(self.format, *v)),
+                None => visitor.visit_none(),
+            },
+            Value::Newtype(v) => {
+                visitor.visit_newtype_struct(ValueDeserializer::new(self.format, *v))
+            }
+            Value::Seq(v) => visitor.visit_seq(FlatSeqAccess::new(self.format, v)),
+            Value::Map(_) => self.deserialize_map(visitor),
+            Value::Bytes(v) => visitor.visit_byte_buf(v),
+        }
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, Self::Error>

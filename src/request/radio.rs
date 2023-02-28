@@ -32,7 +32,7 @@ pub struct CreateInternetRadioStation {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
 #[subsonic(since = "1.16.0", path = "updateInternetRadioStation")]
-pub struct UpdateRadioStation {
+pub struct UpdateInternetRadioStation {
     /// The ID for the station.
     pub id: String,
     /// The stream URL for the station.

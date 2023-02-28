@@ -2,7 +2,7 @@ use std::{str::FromStr, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use subsonic_macro::SubsonicType;
-use time::PrimitiveDateTime;
+use time::{OffsetDateTime, PrimitiveDateTime};
 
 use crate::{impl_from_query_value_for_parse, impl_to_query_value_for_display};
 
@@ -13,20 +13,26 @@ pub enum Format {
 }
 
 /// A date and time.
-/// Use [`time::PrimitiveDateTime`] to convert to and from [`DateTime`].
+/// Use [`time::OffsetDateTime`] to convert to and from [`DateTime`].
 #[derive(Debug, Clone, PartialEq, SubsonicType)]
 #[subsonic(serde)]
-pub struct DateTime(PrimitiveDateTime);
+pub struct DateTime(OffsetDateTime);
 impl_to_query_value_for_display!(DateTime);
 impl_from_query_value_for_parse!(DateTime);
 
 impl From<PrimitiveDateTime> for DateTime {
-    fn from(datetime: PrimitiveDateTime) -> Self {
+    fn from(value: PrimitiveDateTime) -> Self {
+        Self(value.assume_utc())
+    }
+}
+
+impl From<OffsetDateTime> for DateTime {
+    fn from(datetime: OffsetDateTime) -> Self {
         Self(datetime)
     }
 }
 
-impl From<DateTime> for PrimitiveDateTime {
+impl From<DateTime> for OffsetDateTime {
     fn from(datetime: DateTime) -> Self {
         datetime.0
     }
@@ -34,10 +40,7 @@ impl From<DateTime> for PrimitiveDateTime {
 
 impl Default for DateTime {
     fn default() -> Self {
-        Self::from(PrimitiveDateTime::new(
-            time::macros::date!(1970 - 01 - 01),
-            time::macros::time!(00:00:00),
-        ))
+        Self::from(OffsetDateTime::from_unix_timestamp(0).unwrap())
     }
 }
 
@@ -45,11 +48,17 @@ impl FromStr for DateTime {
     type Err = time::error::Parse;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        PrimitiveDateTime::parse(
+        let first_try = PrimitiveDateTime::parse(
             s,
             time::macros::format_description!("[year]-[month]-[day]T[hour]:[minute]:[second]"),
         )
-        .map(Self::from)
+        .map(Self::from);
+        if let Ok(datetime) = first_try {
+            return Ok(Self::from(datetime));
+        }
+
+        OffsetDateTime::parse(s, &time::format_description::well_known::Iso8601::PARSING)
+            .map(Self::from)
     }
 }
 
@@ -100,6 +109,7 @@ impl<'de> Deserialize<'de> for DateTime {
     Deserialize,
     SubsonicType,
 )]
+#[serde(transparent)]
 #[subsonic(serde)]
 pub struct Milliseconds(u64);
 impl_to_query_value_for_display!(Milliseconds);
@@ -118,6 +128,23 @@ impl Milliseconds {
         Duration::from_millis(self.0)
     }
 }
+
+// impl serde::Serialize for Milliseconds {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: serde::Serializer,
+//     {
+//         serializer.serialize_u64(self.0)
+//     }
+// }
+
+// impl<'de> serde::Deserialize<'de> for Milliseconds {
+//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+//     where
+//         D: serde::Deserializer<'de> {
+//         deserializer.deserialize_u64(visitor)
+//     }
+// }
 
 impl From<u64> for Milliseconds {
     fn from(milliseconds: u64) -> Self {

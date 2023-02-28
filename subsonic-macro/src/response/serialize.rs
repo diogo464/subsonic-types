@@ -104,7 +104,7 @@ fn struct_field_serialize_entry(field: &Field) -> TokenStream {
             }
         }
     };
-    if field.attrs.optional {
+    if util::type_is_option(field.ty) {
         quote::quote! {
             if  self.#field_ident.is_some() {
                 #output

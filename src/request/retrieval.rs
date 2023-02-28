@@ -10,7 +10,7 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToQuery, FromQuery, SubsonicRequest)]
 #[serde(rename_all = "camelCase")]
-#[subsonic(since = "1.0.0", path = "getCoverArt")]
+#[subsonic(since = "1.0.0", path = "stream")]
 pub struct Stream {
     /// A string which uniquely identifies the file to stream. Obtained by calls to [`GetMusicDirectory`].
     pub id: String,

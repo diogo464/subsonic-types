@@ -35,8 +35,6 @@ pub struct FieldAttr {
     /// On the xml side, this translates to `#[serde(rename = "@...")]`.
     /// On the json side, this is ignored.
     pub attribute: bool,
-    /// Is this field an Option<> that should be skipped if it is None?
-    pub optional: bool,
     /// Should the field be flattened
     pub flatten: bool,
     /// Is this an xml value?
@@ -54,7 +52,6 @@ impl FieldAttr {
         let metas = obtain_meta_list(attrs)?;
         let mut rename = None;
         let mut attribute = false;
-        let mut optional = false;
         let mut flatten = false;
         let mut value = false;
         let mut choice = false;
@@ -69,9 +66,6 @@ impl FieldAttr {
                 }
                 syn::Meta::Path(p) if ATTRIBUTE == p => {
                     attribute = true;
-                }
-                syn::Meta::Path(p) if OPTIONAL == p => {
-                    optional = true;
                 }
                 syn::Meta::Path(p) if FLATTEN == p => {
                     flatten = true;
@@ -103,7 +97,6 @@ impl FieldAttr {
         Ok(Self {
             rename,
             attribute,
-            optional,
             flatten,
             value,
             choice,

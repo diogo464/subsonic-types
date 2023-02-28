@@ -1,0 +1,34 @@
+{
+    "subsonic-response": {
+        "status": "ok",
+        "version": "1.16.1",
+        "type": "navidrome",
+        "serverVersion": "0.49.3 (8b93962f)",
+        "playlists": {
+            "playlist": [
+                {
+                    "id": "d830c0ff-74e5-4e4b-9b7a-6be3f7fc2697",
+                    "name": "2023-02-27",
+                    "songCount": 2,
+                    "duration": 589,
+                    "public": false,
+                    "owner": "admin",
+                    "created": "2023-02-27T15:59:10.991316377Z",
+                    "changed": "2023-02-27T15:59:10Z",
+                    "coverArt": "pl-d830c0ff-74e5-4e4b-9b7a-6be3f7fc2697_63fcd34e"
+                },
+                {
+                    "id": "2402328c-2c31-4475-ad3a-a698884edefb",
+                    "name": "2023-02-27",
+                    "songCount": 2,
+                    "duration": 522,
+                    "public": false,
+                    "owner": "admin",
+                    "created": "2023-02-27T16:00:43.404089728Z",
+                    "changed": "2023-02-27T16:00:43Z",
+                    "coverArt": "pl-2402328c-2c31-4475-ad3a-a698884edefb_63fcd3ab"
+                }
+            ]
+        }
+    }
+}

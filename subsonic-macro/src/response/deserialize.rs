@@ -146,7 +146,7 @@ fn struct_fields_option_unwrap(fields: &[Field]) -> Vec<TokenStream> {
 
 fn struct_field_option_unwrap(field: &Field) -> TokenStream {
     let field_ident = field.ident;
-    if field.attrs.optional {
+    if util::type_is_vec(field.ty) || util::type_is_option(field.ty) {
         quote::quote! {
             let #field_ident = #field_ident.unwrap_or_default();
         }

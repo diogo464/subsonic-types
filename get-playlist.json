@@ -1,0 +1,67 @@
+{
+    "subsonic-response": {
+        "status": "ok",
+        "version": "1.16.1",
+        "type": "navidrome",
+        "serverVersion": "0.49.3 (8b93962f)",
+        "playlist": {
+            "id": "2402328c-2c31-4475-ad3a-a698884edefb",
+            "name": "2023-02-27",
+            "songCount": 2,
+            "duration": 522,
+            "public": false,
+            "owner": "admin",
+            "created": "2023-02-27T16:00:43.404089728Z",
+            "changed": "2023-02-27T16:00:43Z",
+            "coverArt": "pl-2402328c-2c31-4475-ad3a-a698884edefb_63fcd3ab",
+            "entry": [
+                {
+                    "id": "928838508700ef99318e42dff9407eee",
+                    "parent": "67b96a9d6611f9765bd11db4ffa42a28",
+                    "isDir": false,
+                    "title": "Draw the Line",
+                    "album": "Draw the Line",
+                    "artist": "Haywyre",
+                    "track": 1,
+                    "year": 2012,
+                    "coverArt": "al-67b96a9d6611f9765bd11db4ffa42a28_0",
+                    "size": 10303833,
+                    "contentType": "audio/mpeg",
+                    "suffix": "mp3",
+                    "duration": 257,
+                    "bitRate": 320,
+                    "path": "Haywyre/Draw the Line/01 - Draw the Line.mp3",
+                    "discNumber": 1,
+                    "created": "2023-02-19T14:06:49.266174771Z",
+                    "albumId": "67b96a9d6611f9765bd11db4ffa42a28",
+                    "artistId": "57fd6b271014d8b0a2fcb9124b143b53",
+                    "type": "music",
+                    "isVideo": false
+                },
+                {
+                    "id": "c523795f3a0af45a94c9d99f34b76603",
+                    "parent": "67b96a9d6611f9765bd11db4ffa42a28",
+                    "isDir": false,
+                    "title": "Erase It",
+                    "album": "Draw the Line",
+                    "artist": "Haywyre",
+                    "track": 2,
+                    "year": 2012,
+                    "coverArt": "al-67b96a9d6611f9765bd11db4ffa42a28_0",
+                    "size": 10647261,
+                    "contentType": "audio/mpeg",
+                    "suffix": "mp3",
+                    "duration": 265,
+                    "bitRate": 320,
+                    "path": "Haywyre/Draw the Line/02 - Erase It.mp3",
+                    "discNumber": 1,
+                    "created": "2023-02-19T14:06:49.26620826Z",
+                    "albumId": "67b96a9d6611f9765bd11db4ffa42a28",
+                    "artistId": "57fd6b271014d8b0a2fcb9124b143b53",
+                    "type": "music",
+                    "isVideo": false
+                }
+            ]
+        }
+    }
+}

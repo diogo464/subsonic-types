@@ -7,7 +7,7 @@ use subsonic_types::{
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let base_url = "http://localhost:4533/";
+    let base_url = "http://localhost:3000";
     let ping = Request {
         username: "admin".into(),
         authentication: Authentication::Password("admin".into()),
@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         body: request::system::Ping,
     };
     let query = ping.to_query();
-    let request_url = format!("{}rest/{}?{}", base_url, request::system::Ping::PATH, query);
+    let request_url = format!("{}{}?{}", base_url, request::system::Ping::PATH, query);
     println!("Request url: {}", request_url);
     let response_body = get(&request_url).unwrap().text().unwrap();
     println!("Response body: {}", response_body);

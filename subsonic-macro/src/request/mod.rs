@@ -132,7 +132,7 @@ pub fn expand(mut input: syn::DeriveInput) -> Result<proc_macro2::TokenStream> {
     let container_attrs = ContainerAttributes::extract(&mut input.attrs)?;
     let container_ident = &input.ident;
 
-    let path = &container_attrs.path;
+    let path = format!("/rest/{}", container_attrs.path);
     let since = &container_attrs.since;
     let output = quote::quote! {
         impl crate::request::SubsonicRequest for #container_ident {

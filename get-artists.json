@@ -1,0 +1,26 @@
+{
+    "subsonic-response": {
+        "status": "ok",
+        "version": "1.16.1",
+        "type": "navidrome",
+        "serverVersion": "0.49.3 (8b93962f)",
+        "artists": {
+            "index": [
+                {
+                    "name": "H",
+                    "artist": [
+                        {
+                            "id": "57fd6b271014d8b0a2fcb9124b143b53",
+                            "name": "Haywyre",
+                            "albumCount": 20,
+                            "coverArt": "ar-57fd6b271014d8b0a2fcb9124b143b53_0",
+                            "artistImageUrl": "http://localhost:4533/share/img/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFyLTU3ZmQ2YjI3MTAxNGQ4YjBhMmZjYjkxMjRiMTQzYjUzXzAiLCJpc3MiOiJORCJ9.-HInypoa_50Fg-F7mlycP-L-aBSFI_y0F7OeYItLI5A?size=600"
+                        }
+                    ]
+                }
+            ],
+            "lastModified": 1677503207000,
+            "ignoredArticles": "The El La Los Las Le Les Os As O A"
+        }
+    }
+}

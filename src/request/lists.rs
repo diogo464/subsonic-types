@@ -107,7 +107,8 @@ impl<'de> serde::Deserialize<'de> for ListType {
 #[subsonic(since = "1.2.0", path = "getAlbumList")]
 pub struct GetAlbumList {
     /// See [`ListType`].
-    #[serde(rename = "type")] // TODO: rename
+    #[serde(rename = "type")]
+    #[query(rename = "type")]
     pub list_type: ListType,
     /// The number of albums to return. Max 500.
     pub size: Option<u32>,
@@ -135,7 +136,8 @@ pub struct GetAlbumList {
 #[subsonic(since = "1.8.0", path = "getAlbumList2")]
 pub struct GetAlbumList2 {
     /// See [`ListType`].
-    #[serde(rename = "type")] // TODO: rename
+    #[serde(rename = "type")]
+    #[query(rename = "type")]
     pub list_type: ListType,
     /// The number of albums to return. Max 500.
     pub size: Option<u32>,
