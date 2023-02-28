@@ -26,4 +26,9 @@ percent-encoding = "2.2"
 ordered-float = "3.4"
 
 [dev-dependencies]
+async-trait = "0.1.64"
+axum = "0.6.9"
+bytes = "1.4.0"
+hyper = "0.14.24"
 reqwest = { version = "0.11", features = ["blocking"] }
+tokio = { version = "1.25.0", features = ["full"] }
