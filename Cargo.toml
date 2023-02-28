@@ -2,19 +2,28 @@
 name = "subsonic-types"
 version = "0.1.0"
 edition = "2021"
+description = "Types for the Subsonic API"
+categories = ["subsonic", "music"]
+homepage = "https://github.com/diogo464/subsonic-types"
+repository = "https://github.com/diogo464/subsonic-types"
+keywords = ["subsonic", "music", "api", "types"]
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-subsonic-macro = { path = "./subsonic-macro" }
-
-quick-xml = { version = "0.27.1", features = ["serde", "serialize"] }
-serde = { version = "1.0.152", features = ["derive"] }
-serde_json = "1.0.93"
-time = { version = "0.3.19", features = ["parsing", "macros", "serde", "formatting"] }
-percent-encoding = "2.2.0"
-serde-value = "0.7.0"
-ordered-float = "3.4.0"
+subsonic-macro = { version = "0.0.0", path = "./subsonic-macro" }
+time = { version = "0.3", features = [
+    "parsing",
+    "macros",
+    "serde",
+    "formatting",
+] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+quick-xml = { version = "0.27", features = ["serde", "serialize"] }
+percent-encoding = "2.2"
+ordered-float = "3.4"
 
 [dev-dependencies]
-reqwest = { version = "0.11.14", features = ["blocking"] }
+reqwest = { version = "0.11", features = ["blocking"] }
