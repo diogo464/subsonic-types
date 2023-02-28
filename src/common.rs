@@ -90,7 +90,7 @@ impl FromStr for DateTime {
         )
         .map(Self::from);
         if let Ok(datetime) = first_try {
-            return Ok(Self::from(datetime));
+            return Ok(datetime);
         }
 
         OffsetDateTime::parse(s, &time::format_description::well_known::Iso8601::PARSING)

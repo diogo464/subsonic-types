@@ -79,7 +79,7 @@ impl FieldAttr {
                 syn::Meta::NameValue(nv) if SINCE == nv.path => {
                     if let syn::Lit::Str(s) = &nv.lit {
                         since = Version::parse(&s.value())
-                            .ok_or_else(|| syn::Error::new_spanned(nv, format!("Invalid version")))
+                            .ok_or_else(|| syn::Error::new_spanned(nv, "Invalid version".to_string()))
                             .map(Some)?;
                     }
                 }

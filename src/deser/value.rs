@@ -236,10 +236,7 @@ impl<'de> Visitor<'de> for ValueVisitor {
                         values.insert(key, Value::Seq(seq));
                     }
                     other => {
-                        let mut seq = Vec::new();
-                        seq.push(other);
-                        seq.push(value);
-                        values.insert(key, Value::Seq(seq));
+                        values.insert(key, Value::Seq(vec![other, value]));
                     }
                 },
                 None => {
@@ -271,7 +268,7 @@ impl Hash for Value {
             Value::F64(v) => OrderedFloat(v).hash(hasher),
             Value::Char(v) => v.hash(hasher),
             Value::String(ref v) => v.hash(hasher),
-            Value::Unit => ().hash(hasher),
+            Value::Unit => {}
             Value::Option(ref v) => v.hash(hasher),
             Value::Newtype(ref v) => v.hash(hasher),
             Value::Seq(ref v) => v.hash(hasher),
@@ -284,25 +281,25 @@ impl Hash for Value {
 impl PartialEq for Value {
     fn eq(&self, rhs: &Self) -> bool {
         match (self, rhs) {
-            (&Value::Bool(v0), &Value::Bool(v1)) if v0 == v1 => true,
-            (&Value::U8(v0), &Value::U8(v1)) if v0 == v1 => true,
-            (&Value::U16(v0), &Value::U16(v1)) if v0 == v1 => true,
-            (&Value::U32(v0), &Value::U32(v1)) if v0 == v1 => true,
-            (&Value::U64(v0), &Value::U64(v1)) if v0 == v1 => true,
-            (&Value::I8(v0), &Value::I8(v1)) if v0 == v1 => true,
-            (&Value::I16(v0), &Value::I16(v1)) if v0 == v1 => true,
-            (&Value::I32(v0), &Value::I32(v1)) if v0 == v1 => true,
-            (&Value::I64(v0), &Value::I64(v1)) if v0 == v1 => true,
-            (&Value::F32(v0), &Value::F32(v1)) if OrderedFloat(v0) == OrderedFloat(v1) => true,
-            (&Value::F64(v0), &Value::F64(v1)) if OrderedFloat(v0) == OrderedFloat(v1) => true,
-            (&Value::Char(v0), &Value::Char(v1)) if v0 == v1 => true,
-            (&Value::String(ref v0), &Value::String(ref v1)) if v0 == v1 => true,
-            (&Value::Unit, &Value::Unit) => true,
-            (&Value::Option(ref v0), &Value::Option(ref v1)) if v0 == v1 => true,
-            (&Value::Newtype(ref v0), &Value::Newtype(ref v1)) if v0 == v1 => true,
-            (&Value::Seq(ref v0), &Value::Seq(ref v1)) if v0 == v1 => true,
-            (&Value::Map(ref v0), &Value::Map(ref v1)) if v0 == v1 => true,
-            (&Value::Bytes(ref v0), &Value::Bytes(ref v1)) if v0 == v1 => true,
+            (Value::Bool(v0), Value::Bool(v1)) if v0 == v1 => true,
+            (Value::U8(v0), Value::U8(v1)) if v0 == v1 => true,
+            (Value::U16(v0), Value::U16(v1)) if v0 == v1 => true,
+            (Value::U32(v0), Value::U32(v1)) if v0 == v1 => true,
+            (Value::U64(v0), Value::U64(v1)) if v0 == v1 => true,
+            (Value::I8(v0), Value::I8(v1)) if v0 == v1 => true,
+            (Value::I16(v0), Value::I16(v1)) if v0 == v1 => true,
+            (Value::I32(v0), Value::I32(v1)) if v0 == v1 => true,
+            (Value::I64(v0), Value::I64(v1)) if v0 == v1 => true,
+            (Value::F32(v0), Value::F32(v1)) if OrderedFloat(*v0) == OrderedFloat(*v1) => true,
+            (Value::F64(v0), Value::F64(v1)) if OrderedFloat(*v0) == OrderedFloat(*v1) => true,
+            (Value::Char(v0), Value::Char(v1)) if v0 == v1 => true,
+            (Value::String(ref v0), Value::String(ref v1)) if v0 == v1 => true,
+            (Value::Unit, &Value::Unit) => true,
+            (Value::Option(ref v0), Value::Option(ref v1)) if v0 == v1 => true,
+            (Value::Newtype(ref v0), Value::Newtype(ref v1)) if v0 == v1 => true,
+            (Value::Seq(ref v0), Value::Seq(ref v1)) if v0 == v1 => true,
+            (Value::Map(ref v0), Value::Map(ref v1)) if v0 == v1 => true,
+            (Value::Bytes(ref v0), Value::Bytes(ref v1)) if v0 == v1 => true,
             _ => false,
         }
     }
@@ -311,26 +308,26 @@ impl PartialEq for Value {
 impl Ord for Value {
     fn cmp(&self, rhs: &Self) -> Ordering {
         match (self, rhs) {
-            (&Value::Bool(v0), &Value::Bool(ref v1)) => v0.cmp(v1),
-            (&Value::U8(v0), &Value::U8(ref v1)) => v0.cmp(v1),
-            (&Value::U16(v0), &Value::U16(ref v1)) => v0.cmp(v1),
-            (&Value::U32(v0), &Value::U32(ref v1)) => v0.cmp(v1),
-            (&Value::U64(v0), &Value::U64(ref v1)) => v0.cmp(v1),
-            (&Value::I8(v0), &Value::I8(ref v1)) => v0.cmp(v1),
-            (&Value::I16(v0), &Value::I16(ref v1)) => v0.cmp(v1),
-            (&Value::I32(v0), &Value::I32(ref v1)) => v0.cmp(v1),
-            (&Value::I64(v0), &Value::I64(ref v1)) => v0.cmp(v1),
-            (&Value::F32(v0), &Value::F32(v1)) => OrderedFloat(v0).cmp(&OrderedFloat(v1)),
-            (&Value::F64(v0), &Value::F64(v1)) => OrderedFloat(v0).cmp(&OrderedFloat(v1)),
-            (&Value::Char(v0), &Value::Char(ref v1)) => v0.cmp(v1),
-            (&Value::String(ref v0), &Value::String(ref v1)) => v0.cmp(v1),
-            (&Value::Unit, &Value::Unit) => Ordering::Equal,
-            (&Value::Option(ref v0), &Value::Option(ref v1)) => v0.cmp(v1),
-            (&Value::Newtype(ref v0), &Value::Newtype(ref v1)) => v0.cmp(v1),
-            (&Value::Seq(ref v0), &Value::Seq(ref v1)) => v0.cmp(v1),
-            (&Value::Map(ref v0), &Value::Map(ref v1)) => v0.cmp(v1),
-            (&Value::Bytes(ref v0), &Value::Bytes(ref v1)) => v0.cmp(v1),
-            (ref v0, ref v1) => v0.discriminant().cmp(&v1.discriminant()),
+            (Value::Bool(v0), Value::Bool(ref v1)) => v0.cmp(v1),
+            (Value::U8(v0), Value::U8(ref v1)) => v0.cmp(v1),
+            (Value::U16(v0), Value::U16(ref v1)) => v0.cmp(v1),
+            (Value::U32(v0), Value::U32(ref v1)) => v0.cmp(v1),
+            (Value::U64(v0), Value::U64(ref v1)) => v0.cmp(v1),
+            (Value::I8(v0), Value::I8(ref v1)) => v0.cmp(v1),
+            (Value::I16(v0), Value::I16(ref v1)) => v0.cmp(v1),
+            (Value::I32(v0), Value::I32(ref v1)) => v0.cmp(v1),
+            (Value::I64(v0), Value::I64(ref v1)) => v0.cmp(v1),
+            (Value::F32(v0), Value::F32(v1)) => OrderedFloat(*v0).cmp(&OrderedFloat(*v1)),
+            (Value::F64(v0), Value::F64(v1)) => OrderedFloat(*v0).cmp(&OrderedFloat(*v1)),
+            (Value::Char(v0), Value::Char(ref v1)) => v0.cmp(v1),
+            (Value::String(ref v0), Value::String(ref v1)) => v0.cmp(v1),
+            (Value::Unit, &Value::Unit) => Ordering::Equal,
+            (Value::Option(ref v0), Value::Option(ref v1)) => v0.cmp(v1),
+            (Value::Newtype(ref v0), Value::Newtype(ref v1)) => v0.cmp(v1),
+            (Value::Seq(ref v0), Value::Seq(ref v1)) => v0.cmp(v1),
+            (Value::Map(ref v0), Value::Map(ref v1)) => v0.cmp(v1),
+            (Value::Bytes(ref v0), Value::Bytes(ref v1)) => v0.cmp(v1),
+            (v0, v1) => v0.discriminant().cmp(&v1.discriminant()),
         }
     }
 }

@@ -75,7 +75,7 @@ impl Response {
         Self {
             status: ResponseStatus::Ok,
             version,
-            body: body,
+            body,
         }
     }
 
@@ -232,7 +232,7 @@ impl Response {
     ///     
     ///     // Deserializing with 1.9.0 works beacause only the `name` field is required in `genre`.
     ///     assert!(Response::from_json_versioned(serialized, Version::V1_9_0).is_ok());
-    /// 
+    ///
     ///     // Deserializing with 1.10.2 fails because the `albumCount` field is required in `genre` but is missing.
     ///     assert!(Response::from_json_versioned(serialized, Version::V1_10_2).is_err());
     /// # Ok(())

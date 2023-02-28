@@ -103,7 +103,7 @@ pub trait QueryAccumulator: Default {
 pub trait QueryValueAccumulator: Default {
     type Output: Sized;
 
-    fn consume<'a>(&mut self, value: QueryValue<'a>) -> Result<(), QueryValueParseError>;
+    fn consume(&mut self, value: QueryValue) -> Result<(), QueryValueParseError>;
     fn finish(self) -> Result<Self::Output, QueryValueParseError>;
 }
 
@@ -251,12 +251,12 @@ mod basic {
         }
     }
 
-    pub fn parse_query<'a>(query: &'a str) -> impl Iterator<Item = Result<QueryPair<'a>>> + 'a {
+    pub fn parse_query(query: &str) -> impl Iterator<Item = Result<QueryPair>> + '_ {
         QueryIter::new(query)
     }
 }
 
-pub fn from_query<'a, T>(query: &str) -> Result<T>
+pub fn from_query<T>(query: &str) -> Result<T>
 where
     T: FromQuery,
 {
@@ -352,7 +352,7 @@ where
 {
     type Output = T;
 
-    fn consume<'a>(&mut self, value: QueryValue<'a>) -> Result<(), QueryValueParseError> {
+    fn consume(&mut self, value: QueryValue) -> Result<(), QueryValueParseError> {
         if self.value.is_some() {
             return Err(QueryValueParseError::duplicate_value());
         }
@@ -392,7 +392,7 @@ where
 {
     type Output = Option<T>;
 
-    fn consume<'a>(&mut self, value: QueryValue<'a>) -> Result<(), QueryValueParseError> {
+    fn consume(&mut self, value: QueryValue) -> Result<(), QueryValueParseError> {
         let accumulator = self
             .value
             .get_or_insert_with(<T as FromQueryValue>::QueryValueAccumulator::default);
@@ -431,7 +431,7 @@ where
 {
     type Output = Vec<T>;
 
-    fn consume<'a>(&mut self, value: QueryValue<'a>) -> Result<(), QueryValueParseError> {
+    fn consume(&mut self, value: QueryValue) -> Result<(), QueryValueParseError> {
         let mut accumulator = <T as FromQueryValue>::QueryValueAccumulator::default();
         accumulator.consume(value)?;
         let value = accumulator.finish()?;
@@ -451,20 +451,15 @@ where
     type QueryValueAccumulator = QueryValueAccumulatorVec<T>;
 }
 
+#[derive(Default)]
 pub struct QueryValueAccumulatorBool {
     value: Option<bool>,
-}
-
-impl Default for QueryValueAccumulatorBool {
-    fn default() -> Self {
-        Self { value: None }
-    }
 }
 
 impl QueryValueAccumulator for QueryValueAccumulatorBool {
     type Output = bool;
 
-    fn consume<'a>(&mut self, value: QueryValue<'a>) -> Result<(), QueryValueParseError> {
+    fn consume(&mut self, value: QueryValue) -> Result<(), QueryValueParseError> {
         if self.value.is_some() {
             return Err(QueryValueParseError::duplicate_value());
         }

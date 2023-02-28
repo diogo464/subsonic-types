@@ -73,7 +73,7 @@ fn expand_struct(container: &Container, fields: &[Field]) -> Result<TokenStream>
 fn struct_fields_serialize_entry(fields: &[Field]) -> Vec<TokenStream> {
     fields
         .iter()
-        .map(|field| struct_field_serialize_entry(field))
+        .map(struct_field_serialize_entry)
         .collect()
 }
 
@@ -118,7 +118,7 @@ fn struct_field_serialize_entry(field: &Field) -> TokenStream {
 fn struct_fields_key_decl(fields: &[Field]) -> Vec<TokenStream> {
     fields
         .iter()
-        .map(|field| struct_field_key_decl(field))
+        .map(struct_field_key_decl)
         .collect()
 }
 

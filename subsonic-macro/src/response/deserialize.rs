@@ -140,7 +140,7 @@ fn deserialize_generics(container: &Container) -> (TokenStream, TokenStream, Tok
 fn struct_fields_option_unwrap(fields: &[Field]) -> Vec<TokenStream> {
     fields
         .iter()
-        .map(|field| struct_field_option_unwrap(field))
+        .map(struct_field_option_unwrap)
         .collect()
 }
 
@@ -176,7 +176,7 @@ fn struct_fields_flatten_assign(fields: &[Field]) -> Vec<TokenStream> {
     // Only 1 flattened field is supported atm
     fields
         .iter()
-        .map(|field| struct_field_flatten_assign(field))
+        .map(struct_field_flatten_assign)
         .collect()
 }
 
@@ -201,7 +201,7 @@ fn struct_field_flatten_assign(field: &Field) -> TokenStream {
 fn struct_fields_match_arms(fields: &[Field]) -> Vec<TokenStream> {
     fields
         .iter()
-        .map(|field| struct_field_match_arm(field))
+        .map(struct_field_match_arm)
         .collect()
 }
 
@@ -227,7 +227,7 @@ fn struct_field_match_arm(field: &Field) -> TokenStream {
 fn struct_fields_opt_init(fields: &[Field]) -> Vec<TokenStream> {
     fields
         .iter()
-        .map(|field| struct_field_opt_init(field))
+        .map(struct_field_opt_init)
         .collect()
 }
 
@@ -248,7 +248,7 @@ fn struct_field_opt_init(field: &Field) -> TokenStream {
 fn struct_fields_key_decl(fields: &[Field]) -> Vec<TokenStream> {
     fields
         .iter()
-        .map(|field| struct_field_key_decl(field))
+        .map(struct_field_key_decl)
         .collect()
 }
 

@@ -143,7 +143,7 @@ impl<'de> MapAccess<'de> for FlatMapAccess<'de> {
             ))?,
         };
         self.index += 1;
-        Ok(seed.deserialize(ValueDeserializer::new(self.format, value))?)
+        seed.deserialize(ValueDeserializer::new(self.format, value))
     }
 }
 
@@ -321,7 +321,7 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
                         _ => Err(serde::de::Error::custom("invalid boolean")),
                     }
                 }
-                _ => return Err(serde::de::Error::custom("expected f64")),
+                _ => Err(serde::de::Error::custom("expected f64")),
             },
             v => Err(serde::de::Error::custom(format!(
                 "invalid boolean, found {:?}",
@@ -582,7 +582,7 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
     {
         match self.value {
             Value::Seq(array) => visitor.visit_seq(FlatSeqAccess::new(self.format, array)),
-            v => visitor.visit_seq(FlatSeqAccess::new(self.format, vec![Value::from(v)])),
+            v => visitor.visit_seq(FlatSeqAccess::new(self.format, vec![v])),
         }
     }
 

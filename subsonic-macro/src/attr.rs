@@ -5,7 +5,6 @@ pub const FLATTEN: AttrName = AttrName::new("flatten");
 pub const SINCE: AttrName = AttrName::new("since");
 pub const PATH: AttrName = AttrName::new("path");
 pub const ATTRIBUTE: AttrName = AttrName::new("attribute");
-pub const OPTIONAL: AttrName = AttrName::new("optional");
 pub const VALUE: AttrName = AttrName::new("value");
 pub const SERDE: AttrName = AttrName::new("serde");
 pub const CHOICE: AttrName = AttrName::new("choice");

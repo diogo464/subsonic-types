@@ -13,7 +13,7 @@ pub const FLATTEN: AttrName = AttrName::new("flatten");
 pub struct ContainerAttr;
 
 impl ContainerAttr {
-    pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
+    pub fn from_attrs(_attrs: &[syn::Attribute]) -> Result<Self> {
         Ok(Self)
     }
 }
@@ -113,7 +113,7 @@ impl<'a> Data<'a> {
 pub fn to_query(input: syn::DeriveInput) -> Result<TokenStream> {
     let container = Container::from_input(&input)?;
     match &container.data {
-        Data::Struct(data) => to_query_struct(&container, &data),
+        Data::Struct(data) => to_query_struct(&container, data),
     }
 }
 
@@ -139,7 +139,7 @@ pub fn to_query_struct(container: &Container, fields: &[Field]) -> Result<TokenS
 pub fn from_query(input: syn::DeriveInput) -> Result<TokenStream> {
     let container = Container::from_input(&input)?;
     match &container.data {
-        Data::Struct(data) => from_query_struct(&container, &data),
+        Data::Struct(data) => from_query_struct(&container, data),
     }
 }
 
@@ -210,7 +210,7 @@ pub fn from_query_struct(container: &Container, fields: &[Field]) -> Result<Toke
 }
 
 fn fields_finish(fields: &[Field]) -> Vec<TokenStream> {
-    fields.iter().map(|field| field_finish(field)).collect()
+    fields.iter().map(field_finish).collect()
 }
 
 fn field_finish(field: &Field) -> TokenStream {
@@ -234,7 +234,7 @@ fn field_finish(field: &Field) -> TokenStream {
 fn fields_flattened_consume(fields: &[Field]) -> Vec<TokenStream> {
     fields
         .iter()
-        .map(|field| field_flattened_consume(field))
+        .map(field_flattened_consume)
         .collect()
 }
 
@@ -253,14 +253,15 @@ fn field_flattened_consume(field: &Field) -> TokenStream {
 }
 
 fn fields_to_query(fields: &[Field]) -> Vec<TokenStream> {
-    fields.iter().map(|field| field_to_query(field)).collect()
+    fields.iter().map(field_to_query).collect()
 }
 
 fn field_to_query(field: &Field) -> TokenStream {
     let field_ty = field.ty;
     let field_ident = field.ident;
     let field_name = field_name(field);
-    let output = if field.attrs.flatten {
+    
+    if field.attrs.flatten {
         quote::quote! {
             <#field_ty as crate::query::ToQuery>::to_query_builder(
                 &self.#field_ident,
@@ -275,14 +276,13 @@ fn field_to_query(field: &Field) -> TokenStream {
                 #field_name,
             );
         }
-    };
-    output
+    }
 }
 
 fn fields_consume_match_arm(fields: &[Field]) -> Vec<TokenStream> {
     fields
         .iter()
-        .map(|field| field_consume_match_arm(field))
+        .map(field_consume_match_arm)
         .collect()
 }
 
@@ -307,7 +307,7 @@ fn field_consume_match_arm(field: &Field) -> TokenStream {
 fn fields_accum_struct_type(fields: &[Field]) -> Vec<TokenStream> {
     fields
         .iter()
-        .map(|field| field_accum_struct_type(field))
+        .map(field_accum_struct_type)
         .collect()
 }
 
