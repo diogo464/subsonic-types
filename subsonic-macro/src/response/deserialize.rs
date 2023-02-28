@@ -151,13 +151,24 @@ fn struct_field_option_unwrap(field: &Field) -> TokenStream {
             let #field_ident = #field_ident.unwrap_or_default();
         }
     } else {
-        quote::quote! {
+        let mut tokens = quote::quote! {
             let #field_ident = #field_ident.ok_or_else(|| {
                 serde::de::Error::missing_field(
                     std::stringify!(#field_ident),
                 )
             })?;
+        };
+        if let Some(since) = field.attrs.since {
+            tokens = quote::quote! {
+                let #field_ident = if __version >= #since {
+                    #tokens
+                    #field_ident
+                } else {
+                    #field_ident.unwrap_or_default()
+                };
+            };
         }
+        tokens
     }
 }
 

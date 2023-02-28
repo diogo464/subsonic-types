@@ -114,10 +114,39 @@ impl Response {
     /// # }
     /// ```
     pub fn to_json(&self) -> Result<String, Error> {
-        self.to_json_versioned(Version::LATEST)
+        self.to_json_versioned(self.version)
     }
 
     /// Same as [`Response::to_json`] but allows specifying the api version.
+    ///
+    /// # Example
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     use subsonic_types::{common::Version, response::{Response, ResponseBody, JukeboxStatus}};
+    ///     let response = Response::ok(
+    ///         Version::V1_16_1,
+    ///         ResponseBody::JukeboxStatus(JukeboxStatus {
+    ///             current_index: 1,
+    ///             playing: true,
+    ///             gain: 1.0,
+    ///             position: Some(5), // Only added in 1.7.0
+    ///         })
+    ///    );
+    ///     
+    ///     // Serialize with 1.7.0
+    ///     assert_eq!(
+    ///         r#"{"subsonic-response":{"status":"ok","version":"1.16.1","jukeboxStatus":{"currentIndex":1,"playing":true,"gain":1.0,"position":5}}}"#,
+    ///         Response::to_json_versioned(&response, Version::V1_7_0)?
+    ///     );
+    ///
+    ///     // Serialize with 1.6.0
+    ///    assert_eq!(
+    ///         r#"{"subsonic-response":{"status":"ok","version":"1.16.1","jukeboxStatus":{"currentIndex":1,"playing":true,"gain":1.0}}}"#,
+    ///         Response::to_json_versioned(&response, Version::V1_6_0)?
+    ///    );
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn to_json_versioned(&self, version: Version) -> Result<String, Error> {
         pub struct SubsonicResponse<'a> {
             subsonic_response: &'a Response,
@@ -183,6 +212,32 @@ impl Response {
     }
 
     /// Same as [`Response::from_json`] but allows specifying the api version.
+    ///
+    /// # Example
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    ///     use subsonic_types::{common::Version, response::{Response, ResponseBody, JukeboxStatus}};
+    ///     let serialized = r#"{
+    ///         "subsonic-response": {
+    ///             "status":"ok",
+    ///             "version":"1.10.2",
+    ///             "genres": {
+    ///                 "genre": [{
+    ///                     "name": "EDM",
+    ///                     "songCount": 1
+    ///                 }]
+    ///             }
+    ///          }
+    ///     }"#;
+    ///     
+    ///     // Deserializing with 1.9.0 works beacause only the `name` field is required in `genre`.
+    ///     assert!(Response::from_json_versioned(serialized, Version::V1_9_0).is_ok());
+    /// 
+    ///     // Deserializing with 1.10.2 fails because the `albumCount` field is required in `genre` but is missing.
+    ///     assert!(Response::from_json_versioned(serialized, Version::V1_10_2).is_err());
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn from_json_versioned(content: &str, version: Version) -> Result<Self, Error> {
         #[derive(SubsonicType)]
         pub struct SubsonicResponse {
@@ -216,10 +271,11 @@ impl Response {
     /// # }
     /// ```
     pub fn to_xml(&self) -> Result<String, Error> {
-        self.to_xml_versioned(Version::LATEST)
+        self.to_xml_versioned(self.version)
     }
 
     /// Same as [`Response::to_xml`] but allows specifying the api version.
+    /// See [`Response::from_json_versioned`] for an example.
     pub fn to_xml_versioned(&self, version: Version) -> Result<String, Error> {
         let mut response = String::new();
         let serializer =
@@ -255,6 +311,7 @@ impl Response {
     }
 
     /// Same as [`Response::from_xml`] but allows specifying the api version.
+    /// See [`Response::from_json_versioned`] for an example.
     pub fn from_xml_versioned(content: &str, version: Version) -> Result<Self, Error> {
         let seed = <Self as SubsonicDeserialize>::Seed::from((Format::Xml, version));
         let mut deserializer = quick_xml::de::Deserializer::from_str(content);
