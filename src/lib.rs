@@ -1,5 +1,3 @@
-#![feature(string_extend_from_within)]
-
 pub(crate) mod deser;
 #[macro_use]
 pub(crate) mod query;
