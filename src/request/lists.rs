@@ -243,6 +243,6 @@ mod tests {
             music_folder_id: None,
         };
         let query = test_request_encode(&request);
-        assert_eq!(query, "listType=byGenre&size=10&offset=0&genre=Rock");
+        assert_eq!(query, "type=byGenre&size=10&offset=0&genre=Rock");
     }
 }

@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 use subsonic_macro::SubsonicType;
 
 use crate::{
-    common::{AverageRating, DateTime, Format, MediaType, Milliseconds, UserRating, Version},
+    common::{
+        AverageRating, DateTime, Format, MediaType, Milliseconds, Seconds, UserRating, Version,
+    },
     deser::{SubsonicDeserialize, SubsonicSerialize, SubsonicSerializeWrapper},
 };
 
@@ -957,7 +959,7 @@ pub struct Child {
     #[subsonic(attribute)]
     pub transcoded_suffix: Option<String>,
     #[subsonic(attribute)]
-    pub duration: Option<u32>,
+    pub duration: Option<Seconds>,
     #[subsonic(attribute)]
     pub bit_rate: Option<u32>,
     #[subsonic(attribute)]
@@ -980,7 +982,7 @@ pub struct Child {
     pub album_id: Option<String>,
     #[subsonic(attribute, since = "1.8.0")]
     pub artist_id: Option<String>,
-    #[subsonic(attribute, since = "1.8.0")]
+    #[subsonic(rename = "type", attribute, since = "1.8.0")]
     pub media_type: Option<MediaType>,
     #[subsonic(attribute, since = "1.10.1")]
     pub bookmark_position: Option<u64>,
@@ -1053,7 +1055,7 @@ pub struct Playlist {
     #[subsonic(attribute, since = "1.8.0")]
     pub song_count: u32,
     #[subsonic(attribute, since = "1.8.0")]
-    pub duration: u32,
+    pub duration: Seconds,
     #[subsonic(attribute, since = "1.8.0")]
     pub created: DateTime,
     #[subsonic(attribute, since = "1.13.0")]
@@ -1636,7 +1638,7 @@ mod tests {
                         size: Some(8421341),
                         content_type: Some("audio/mpeg".into()),
                         suffix: Some("mp3".into()),
-                        duration: Some(146),
+                        duration: Some(Seconds::new(146)),
                         bit_rate: Some(128),
                         path: Some("ABBA/Arrival/Dancing Queen.mp3".into()),
                         ..Default::default()
@@ -1657,7 +1659,7 @@ mod tests {
                         suffix: Some("flac".into()),
                         transcoded_content_type: Some("audio/mpeg".into()),
                         transcoded_suffix: Some("mp3".into()),
-                        duration: Some(208),
+                        duration: Some(Seconds::new(208)),
                         bit_rate: Some(128),
                         path: Some("ABBA/Arrival/Money, Money, Money.mp3".into()),
                         ..Default::default()
@@ -1748,7 +1750,7 @@ mod tests {
                         size: Some(8421341),
                         content_type: Some("audio/mpeg".into()),
                         suffix: Some("mp3".into()),
-                        duration: Some(146),
+                        duration: Some(Seconds::new(146)),
                         bit_rate: Some(128),
                         path: Some("ABBA/Arrival/Dancing Queen.mp3".into()),
                         ..Default::default()
@@ -1769,7 +1771,7 @@ mod tests {
                         suffix: Some("flac".into()),
                         transcoded_content_type: Some("audio/mpeg".into()),
                         transcoded_suffix: Some("mp3".into()),
-                        duration: Some(208),
+                        duration: Some(Seconds::new(208)),
                         bit_rate: Some(128),
                         path: Some("ABBA/Arrival/Money, Money, Money.mp3".into()),
                         ..Default::default()

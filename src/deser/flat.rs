@@ -83,7 +83,6 @@ impl<'de> Deserializer<'de> for FlatMapDeserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        eprintln!("deserialize_enum");
         match self.pairs.pop() {
             Some((Some(k), Some(v))) if variants.contains(&k.as_str()) => {
                 visitor.visit_enum(FlatEnumAccess::new(self.format, k, v))
@@ -647,7 +646,15 @@ impl<'de> Deserializer<'de> for ValueDeserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        self.deserialize_map(visitor)
+        let key = match self.value {
+            Value::String(v) => v,
+            _ => {
+                return Err(serde::de::Error::custom(
+                    "expected enum variant to be string",
+                ))
+            }
+        };
+        visitor.visit_enum(FlatEnumAccess::new(self.format, key, Value::Unit))
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>

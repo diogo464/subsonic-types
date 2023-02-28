@@ -175,7 +175,18 @@ impl FromStr for Milliseconds {
 /// A duration in seconds.
 /// When used to represent an instant in time, it is relative to the Unix epoch.
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, SubsonicType,
+    Debug,
+    Default,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    SubsonicType,
 )]
 #[subsonic(serde)]
 pub struct Seconds(u64);
