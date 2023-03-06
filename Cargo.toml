@@ -26,7 +26,7 @@ percent-encoding = "2.2"
 ordered-float = "3.4"
 
 [dev-dependencies]
-async-trait = "0.1.64"
+async-trait = "0.1.66"
 axum = "0.6.9"
 bytes = "1.4.0"
 hyper = "0.14.24"
