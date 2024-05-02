@@ -13,7 +13,7 @@ license = "MIT"
 
 [dependencies]
 subsonic-types-macro = { version = "0.0.0", path = "./subsonic-types-macro" }
-time = { version = "0.3", features = [
+time = { version = "0.3.36", features = [
     "parsing",
     "macros",
     "serde",
